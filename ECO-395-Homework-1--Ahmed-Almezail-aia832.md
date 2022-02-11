@@ -1,27 +1,5 @@
 Q1
 
-    ## ── Attaching packages ─────────────────────────────────────── tidyverse 1.3.1 ──
-
-    ## ✓ ggplot2 3.3.5     ✓ purrr   0.3.4
-    ## ✓ tibble  3.1.6     ✓ dplyr   1.0.7
-    ## ✓ tidyr   1.1.4     ✓ stringr 1.4.0
-    ## ✓ readr   2.1.1     ✓ forcats 0.5.1
-
-    ## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
-    ## x dplyr::filter() masks stats::filter()
-    ## x dplyr::lag()    masks stats::lag()
-
-    ## 
-    ## Attaching package: 'scales'
-
-    ## The following object is masked from 'package:purrr':
-    ## 
-    ##     discard
-
-    ## The following object is masked from 'package:readr':
-    ## 
-    ##     col_factor
-
 First lets play with our data and breakdown the delays
 
     ## # A tibble: 5 × 4
@@ -68,52 +46,23 @@ Departure delays per airline by months:
 
 Arrival delays per airline by months:
 
-    ## Warning: Removed 20 rows containing missing values (geom_point).
-
 ![](ECO-395-Homework-1--Ahmed-Almezail-aia832_files/figure-markdown_strict/unnamed-chunk-8-1.png)
 
 Now let’s analyze the top 2 airlines with highest total delays:
 
 Southwest Departure:
 
-    ## Warning: Removed 9 rows containing missing values (geom_text).
-
 ![](ECO-395-Homework-1--Ahmed-Almezail-aia832_files/figure-markdown_strict/unnamed-chunk-9-1.png)
 
 Southwest Airlines Arrival:
-
-    ## Warning: Removed 17 rows containing missing values (geom_text).
 
 ![](ECO-395-Homework-1--Ahmed-Almezail-aia832_files/figure-markdown_strict/unnamed-chunk-10-1.png)
 
 Now Lets move to American Airlines Departure:
 
-    ## Warning: Removed 8 rows containing missing values (geom_text).
-
 ![](ECO-395-Homework-1--Ahmed-Almezail-aia832_files/figure-markdown_strict/unnamed-chunk-11-1.png)
 
 American Airlines Arrival:
-
-    A_AA = D %>% 
-      filter(UniqueCarrier=="AA" & !is.na(Origin)& !is.na(Origin)) %>%   
-      group_by(Origin) %>%
-      summarise(n = length(Origin), total = sum(ArrDelay), avrdelay4 = mean(ArrDelay)) %>%
-      arrange(desc(n)) %>%
-      data.frame() %>%
-      top_n(20, wt=n)
-
-    ggplot(A_AA, aes(x=reorder(Origin, n), y=n, label=round(avrdelay4, digits = 0))) + 
-      geom_bar(stat="identity", fill="blue") +
-      coord_flip() +
-      geom_text(position=position_dodge(width=0.5), hjust=-0.25) + 
-      labs(title = "Total Departure Delays by Origin Airport for American Airlines",
-           x = "Origin Airport",
-           y = "Total Delay",
-           subtitle = "Average Delay Value shown to the right of bar",
-           caption = "Since the data is about flights from and to Austin, it is expected to have Austin on the top.
-           However most other delays are going to Dallas and Chicago.")
-
-    ## Warning: Removed 8 rows containing missing values (geom_text).
 
 ![](ECO-395-Homework-1--Ahmed-Almezail-aia832_files/figure-markdown_strict/unnamed-chunk-12-1.png)
 
@@ -121,17 +70,6 @@ I hope now you have a better idea in how to plan for your spring break.
 Make sure you don’t miss any minute.
 
 Q2
-
-    ## 
-    ## Attaching package: 'data.table'
-
-    ## The following objects are masked from 'package:dplyr':
-    ## 
-    ##     between, first, last
-
-    ## The following object is masked from 'package:purrr':
-    ## 
-    ##     transpose
 
 PartA
 
@@ -144,18 +82,9 @@ PartB
 
 PartC
 
-    ## `summarise()` has grouped output by 'performer'. You can override using the `.groups` argument.
-
 ![](ECO-395-Homework-1--Ahmed-Almezail-aia832_files/figure-markdown_strict/unnamed-chunk-17-1.png)
 
 Q3
-
-    ## 
-    ## Attaching package: 'matrixStats'
-
-    ## The following object is masked from 'package:dplyr':
-    ## 
-    ##     count
 
 1st part
 
@@ -183,10 +112,6 @@ standard deviation in height
 
 part 3
 
-    ## Joining, by = "year"
-
-    ## Warning: Removed 6 row(s) containing missing values (geom_path).
-
 ![](ECO-395-Homework-1--Ahmed-Almezail-aia832_files/figure-markdown_strict/unnamed-chunk-21-1.png)
 
 As it shown in the graph, we can notice that, The sport was only for
@@ -202,22 +127,6 @@ females reaching about 24 years old for men and about 23 years old for
 women.
 
 Q4
-
-    ## Loading required package: lattice
-
-    ## 
-    ## Attaching package: 'caret'
-
-    ## The following object is masked from 'package:purrr':
-    ## 
-    ##     lift
-
-    ## 
-    ## Attaching package: 'foreach'
-
-    ## The following objects are masked from 'package:purrr':
-    ## 
-    ##     accumulate, when
 
 Filter the data by trim
 
@@ -245,13 +154,13 @@ Make a train-test split for both trims
 
 Fit a linear model for both trims
 
-    ##  (Intercept)      mileage 
-    ## 71217.197621    -0.570995
+    ##   (Intercept)       mileage 
+    ## 70796.0429742    -0.5640767
 
 ![](ECO-395-Homework-1--Ahmed-Almezail-aia832_files/figure-markdown_strict/unnamed-chunk-26-1.png)
 
     ##   (Intercept)       mileage 
-    ## 152455.620890     -1.707687
+    ## 153803.680472     -1.756935
 
 ![](ECO-395-Homework-1--Ahmed-Almezail-aia832_files/figure-markdown_strict/unnamed-chunk-26-2.png)
 
@@ -260,112 +169,67 @@ Now lets try KNN model with K = 2, 5, 10, 20, 30, 35, 40, 45, 50, 55,
 
 First for 350 S Class and we will view the RMSE
 
-    knn2_350 = knnreg(price ~ mileage, data=class350_train, k=2)
-    rmse(knn2_350, class350_test)
+    ## [1] 11482.94
 
-    ## [1] 9372.635
+    ## [1] 10297.27
 
-    knn5_350 = knnreg(price ~ mileage, data=class350_train, k=5)
-    rmse(knn5_350, class350_test)
+    ## [1] 9911.63
 
-    ## [1] 8379.086
+    ## [1] 9408.56
 
-    knn10_350 = knnreg(price ~ mileage, data=class350_train, k=10)
-    rmse(knn10_350, class350_test)
+    ## [1] 9401.765
 
-    ## [1] 8599.676
+    ## [1] 9515.773
 
-    knn20_350 = knnreg(price ~ mileage, data=class350_train, k=20)
-    rmse(knn20_350, class350_test)
+    ## [1] 9422.795
 
-    ## [1] 8602.516
+    ## [1] 9456.128
 
-    knn30_350 = knnreg(price ~ mileage, data=class350_train, k=30)
-    rmse(knn30_350, class350_test)
+    ## [1] 9521.321
 
-    ## [1] 8775.661
+    ## [1] 9560.329
 
-    knn35_350 = knnreg(price ~ mileage, data=class350_train, k=35)
-    rmse(knn35_350, class350_test)
+    ## [1] 9692.755
 
-    ## [1] 8605.477
+    ## [1] 10012.72
 
-    knn40_350 = knnreg(price ~ mileage, data=class350_train, k=40)
-    rmse(knn40_350, class350_test)
+    ## [1] 10238.36
 
-    ## [1] 8620.351
+    ## [1] 11871.08
 
-    knn45_350 = knnreg(price ~ mileage, data=class350_train, k=45)
-    rmse(knn45_350, class350_test)
-
-    ## [1] 8547.062
-
-    knn50_350 = knnreg(price ~ mileage, data=class350_train, k=50)
-    rmse(knn50_350, class350_test)
-
-    ## [1] 8578.653
-
-    knn55_350 = knnreg(price ~ mileage, data=class350_train, k=55)
-    rmse(knn55_350, class350_test)
-
-    ## [1] 8708.184
-
-    knn60_350 = knnreg(price ~ mileage, data=class350_train, k=60)
-    rmse(knn60_350, class350_test)
-
-    ## [1] 8714.721
-
-    knn80_350 = knnreg(price ~ mileage, data=class350_train, k=80)
-    rmse(knn80_350, class350_test)
-
-    ## [1] 9151.087
-
-    knn100_350 = knnreg(price ~ mileage, data=class350_train, k=100)
-    rmse(knn100_350, class350_test)
-
-    ## [1] 9949.929
-
-    knn150_350 = knnreg(price ~ mileage, data=class350_train, k=150)
-    rmse(knn150_350, class350_test)
-
-    ## [1] 12615.56
-
-    knn200_350 = knnreg(price ~ mileage, data=class350_train, k=200)
-    rmse(knn200_350, class350_test)
-
-    ## [1] 15168.73
+    ## [1] 13976.42
 
 Now the same for 63AMG S Class
 
-    ## [1] 17252.41
+    ## [1] 16185.92
 
-    ## [1] 15578.65
+    ## [1] 14639.97
 
-    ## [1] 14616.04
+    ## [1] 14230.87
 
-    ## [1] 14353.1
+    ## [1] 13651.47
 
-    ## [1] 14182.94
+    ## [1] 13588.08
 
-    ## [1] 14252.61
+    ## [1] 13508.44
 
-    ## [1] 14267.92
+    ## [1] 13412.77
 
-    ## [1] 14230.98
+    ## [1] 13393.99
 
-    ## [1] 14220.44
+    ## [1] 13427.92
 
-    ## [1] 14128.48
+    ## [1] 13331.26
 
-    ## [1] 14173.74
+    ## [1] 13412.83
 
-    ## [1] 14210.38
+    ## [1] 13516.81
 
-    ## [1] 14385.18
+    ## [1] 13777.82
 
-    ## [1] 15145.4
+    ## [1] 14667.24
 
-    ## [1] 16208.11
+    ## [1] 15682.27
 
 Lets plot the fit
 
@@ -381,17 +245,15 @@ Now lets have a look at the fitting of 63AMG S Class model
 
 Now lets do the cross validation for both trims
 
-    ## [1] 11274.98
+    ## [1] 11306.22
 
-    ## [1] 712.5203
-
-    ## Warning: executing %dopar% sequentially: no parallel backend registered
+    ## [1] 599.1367
 
 ![](ECO-395-Homework-1--Ahmed-Almezail-aia832_files/figure-markdown_strict/unnamed-chunk-31-1.png)
 
-    ## [1] 14624.39
+    ## [1] 14626.72
 
-    ## [1] 572.9987
+    ## [1] 350.9722
 
 ![](ECO-395-Homework-1--Ahmed-Almezail-aia832_files/figure-markdown_strict/unnamed-chunk-31-2.png)
 

@@ -7,7 +7,7 @@ output: md_document
 Q1
 
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 library(tidyverse)
 library(ggplot2)
 library(dplyr)
@@ -16,14 +16,14 @@ library(RColorBrewer)
 
 ```
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 ABIA = read.csv('../Assignments/ABIA.csv')
 
 ```
 
 First lets play with our data and breakdown the delays
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 #summary of Arrival delays in general
 ABIA %>%
   group_by(ArrDelay) %>%
@@ -60,7 +60,7 @@ From_AUS_delays = ABIA %>%
 
 Now we want to focus on those 7 variables
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 D = ABIA %>%
   select(Month, DayofMonth, UniqueCarrier, Origin, Dest, ArrDelay, DepDelay)
 
@@ -70,7 +70,7 @@ summary(D)
 
 So which airline with the most departure delays?
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 D_delay = D %>%
   select(DepDelay, UniqueCarrier, Month) %>%
   filter(!is.na(DepDelay) & !is.na(UniqueCarrier)) %>%
@@ -99,7 +99,7 @@ No wonder American Airlines is the 2nd on the list.
 
 Now let's jump to the delay of Arrival flights.
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 A_delay = D %>%
   select(ArrDelay, UniqueCarrier, Month) %>%
   filter(!is.na(ArrDelay) & !is.na(UniqueCarrier)) %>%
@@ -127,7 +127,7 @@ ggplot(A_delay, aes(x=reorder(UniqueCarrier, n), y=n, label=round(avrdelay2, dig
 
 Departure delays per airline by months:
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 D_delay100 = D %>% 
   filter(DepDelay > 100) 
 
@@ -149,7 +149,7 @@ ggplot(D_delay100) +
 
 Arrival delays per airline by months:
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 A_delay100 = D %>% 
   filter(DepDelay > 100) 
 
@@ -175,7 +175,7 @@ Now let's analyze the top 2 airlines with highest total delays:
 Southwest
 Departure:
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 D_WN = D %>% 
   filter(UniqueCarrier=="WN" & !is.na(Origin)& !is.na(Origin)) %>%   
   group_by(Origin) %>%
@@ -202,7 +202,7 @@ ggplot(D_WN, aes(x=reorder(Origin, n), y=n, label=round(avrdelay3, digits = 0)))
 Southwest Airlines
 Arrival:
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 A_WN = D %>% 
   filter(UniqueCarrier=="WN" & !is.na(Origin)& !is.na(Origin)) %>%   
   group_by(Origin) %>%
@@ -229,7 +229,7 @@ ggplot(A_WN, aes(x=reorder(Origin, n), y=n, label=round(avrdelay5, digits = 0)))
 Now Lets move to American Airlines
 Departure:
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 D_AA = D %>% 
   filter(UniqueCarrier=="AA" & !is.na(Origin)& !is.na(Origin)) %>%   
   group_by(Origin) %>%
@@ -255,7 +255,7 @@ ggplot(D_AA, aes(x=reorder(Origin, n), y=n, label=round(avrdelay3, digits = 0)))
 American Airlines
 Arrival:
 
-```{r}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 A_AA = D %>% 
   filter(UniqueCarrier=="AA" & !is.na(Origin)& !is.na(Origin)) %>%   
   group_by(Origin) %>%
@@ -288,7 +288,7 @@ Q2
 
 
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 library(tidyverse)
 library(ggplot2)
 library(data.table)
@@ -296,7 +296,7 @@ library(dplyr)
 ```
 
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 billboard = read.csv('../Assignments/billboard.csv')
 
 ```
@@ -305,7 +305,7 @@ billboard = read.csv('../Assignments/billboard.csv')
 PartA
 
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 billboard = billboard %>%
   select(performer, song, year, week, week_position, song_id, weeks_on_chart)
 
@@ -329,7 +329,7 @@ yes = top_songs %>%
   PartB
   
   
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 div_songs = billboard %>%
     group_by(performer, song, year) %>%
   filter_all(all_vars(.!=1958 & .!=2021))
@@ -359,7 +359,7 @@ div_songs = billboard %>%
   
   PartC
  
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 hit_songs = billboard %>%
    select(weeks_on_chart, performer, song) %>%
    group_by(performer, song) %>%
@@ -394,7 +394,7 @@ hit_songs = billboard %>%
  
  Q3
  
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
  library(tidyverse)
 library(ggplot2)
 library(dplyr)
@@ -409,7 +409,7 @@ library(matrixStats)
 
 1st part
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 height_percentile = olympics_top20 %>%
   select(sex, height, sport) %>%
   group_by(height) %>%
@@ -429,7 +429,7 @@ So The 95th percentile of height for females in the Atheleics games is 197
   
 2nd part
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 t =  olympics_top20 %>%
   select(sex, height, event) %>%
   group_by(event) %>%
@@ -485,7 +485,7 @@ So, Canoeing Women's Kayak Singles 500 metres event has the highest standard dev
 
 part 3
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 zf =  olympics_top20 %>%
   group_by(year, age) %>% 
   filter(sport == "Swimming" & sex == "F") %>%
@@ -543,7 +543,7 @@ The chart excluded the observations in 1924 to not do any predictions for the ga
  
  Q4
  
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 library(tidyverse)
 library(ggplot2)
 library(rsample)  # for creating train/test splits
@@ -560,7 +560,7 @@ sclass = read.csv('../Assignments/sclass.csv')
  
 Filter the data by trim
  
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 
 
 class350 = sclass %>%
@@ -582,7 +582,7 @@ summary(class63AMG)
 
 plot the data for both trims
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 ggplot(data = class350) + 
   geom_point(mapping = aes(x = mileage, y = price), color='darkgrey') +
  labs(title = "Price of 350 S Class by Milages")
@@ -598,7 +598,7 @@ ggplot(data = class63AMG) +
 
 Make a train-test split for both trims
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 class350_split =  initial_split(class350, prop=0.8)
 class350_train = training(class350_split)
 class350_test = testing(class350_split)
@@ -612,7 +612,7 @@ class63AMG_test  = testing(class63AMG_split)
 
 Fit a linear model for both trims
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 lm1_350 = lm(price ~ mileage, data=class350_train)
 coef(lm1_350)
 
@@ -642,7 +642,7 @@ Now lets try KNN model with K = 2, 5, 10, 20, 30, 35, 40, 45, 50, 55, 60, 80, 10
 
 First for 350 S Class and we will view the RMSE
 
-```{r}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 knn2_350 = knnreg(price ~ mileage, data=class350_train, k=2)
 rmse(knn2_350, class350_test)
 
@@ -695,7 +695,7 @@ rmse(knn200_350, class350_test)
 
 Now the same for 63AMG S Class
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 knn2_63AMG = knnreg(price ~ mileage, data=class63AMG_train, k=2)
 rmse(knn2_63AMG, class63AMG_test)
 
@@ -750,7 +750,7 @@ Lets plot the fit
 
 350 S Class
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 class350_testK2 = class350_test %>%
   mutate(class350_predK2 = predict(knn2_350, class350_test))
 
@@ -978,7 +978,7 @@ K200_test + geom_line(aes(x = mileage, y = class350_predK200), color='red', size
 
 Now lets have a look at the fitting of 63AMG S Class model
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 #K2
 
 class63AMG_test = class63AMG_test %>%
@@ -1209,7 +1209,7 @@ KK200_test + geom_line(aes(x = mileage, y = class63AMG_predK200), color='red', s
 
 Now lets do the cross validation for both trims
 
-```{r,echo=FALSE}
+```{r,echo=FALSE, message=FALSE, warning=FALSE}
 
 # K-fold cross validation class350
 
@@ -1302,15 +1302,15 @@ ggplot(cv_grid_63AMG) +
 
 Based on the RMSE numbers, I would use K35 for 350 S Class and K80 or K100 for 63AMG Class.
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 # 350 Class K20 predictions
 K20_test + geom_line(aes(x = mileage, y = class350_predK20), color='red', size=1.5) +
-  labs(title = "Optimal KNN Fitting Model for 350 S Class")
+  labs(title = "Optimal KNN Fitting Model for 350 S Class KNN35")
 
 
 # 63AMG Class K100 predictions
 KK100_test + geom_line(aes(x = mileage, y = class63AMG_predK100), color='red', size=1.5) +
-    labs(title = "Optimal KNN Fitting Model for 63 AMG S Class")
+    labs(title = "Optimal KNN Fitting Model for 63 AMG S Class KNN100")
 
 
 ```

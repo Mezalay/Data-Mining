@@ -1,0 +1,1322 @@
+---
+title: "ECO 935 Homework 1: Ahmed Almezail"
+output: md_document
+---
+
+
+Q1
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(scales)
+library(RColorBrewer)
+
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+ABIA = read.csv('../Assignments/ABIA.csv')
+
+```
+
+First lets play with our data and breakdown the delays
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+#summary of Arrival delays in general
+ABIA %>%
+  group_by(ArrDelay) %>%
+  summarize(avg_ArrDelay = mean(ArrDelay),
+            min_ArrDelay = min(ArrDelay),
+            max_ArrDelay = max(ArrDelay)) %>%
+  head(5) %>%
+  round(1)
+
+#summary of delays going to Austin
+To_AUS_delays = ABIA %>%
+  group_by(ArrDelay + DepDelay) %>%
+  filter(Dest == "AUS") %>%
+  summarize(avg_ArrDelay = mean(ArrDelay),
+            min_ArrDelay = min(ArrDelay),
+            max_ArrDelay = max(ArrDelay)) %>%
+  head(5) %>%
+  round(1)
+
+#summary of delays departing from Austin
+From_AUS_delays = ABIA %>%
+  group_by(ArrDelay + DepDelay) %>%
+  filter(Origin == "AUS") %>%
+  summarize(avg_ArrDelay = mean(ArrDelay),
+            min_ArrDelay = min(ArrDelay),
+            max_ArrDelay = max(ArrDelay)) %>%
+  head(5) %>%
+  round(1)
+
+
+```
+  
+  
+
+Now we want to focus on those 7 variables
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+D = ABIA %>%
+  select(Month, DayofMonth, UniqueCarrier, Origin, Dest, ArrDelay, DepDelay)
+
+summary(D)
+```
+
+
+So which airline with the most departure delays?
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+D_delay = D %>%
+  select(DepDelay, UniqueCarrier, Month) %>%
+  filter(!is.na(DepDelay) & !is.na(UniqueCarrier)) %>%
+  group_by(UniqueCarrier) %>%
+  summarise(n = length(UniqueCarrier), total = sum(DepDelay), avrdelay = mean(DepDelay)) %>%
+  arrange(desc(n)) %>%
+  data.frame() %>%
+  top_n(20, wt=n)
+
+
+ggplot(D_delay, aes(x=reorder(UniqueCarrier, n), y=n, label=round(avrdelay, digits = 0))) + 
+  geom_bar(stat="identity", fill='red') +
+  coord_flip() +
+  geom_text(position=position_dodge(width=0.5), hjust=-0.25) +
+  labs(title = "Total Departure Delays by Airline",
+       x = "Airline",
+       y = "Total Delay",
+       subtitle = "Average Delay Value shown to the right of bar",
+       caption = "Southwest and American Airlines are the highest airlines with total departure delays")
+
+```
+
+
+
+No wonder American Airlines is the 2nd on the list.
+
+Now let's jump to the delay of Arrival flights.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+A_delay = D %>%
+  select(ArrDelay, UniqueCarrier, Month) %>%
+  filter(!is.na(ArrDelay) & !is.na(UniqueCarrier)) %>%
+  group_by(UniqueCarrier) %>%
+  summarise(n = length(UniqueCarrier), total = sum(ArrDelay), avrdelay2 = mean(ArrDelay)) %>%
+  arrange(desc(n)) %>%
+  data.frame() %>%
+  top_n(20, wt=n)
+
+ggplot(A_delay, aes(x=reorder(UniqueCarrier, n), y=n, label=round(avrdelay2, digits = 0))) + 
+  geom_bar(stat="identity", fill='red') +
+  coord_flip() +
+  geom_text(position=position_dodge(width=0.5), hjust=-0.25) +
+  labs(title = "Total Arrival Delays by Airline",
+       x = "Airline",
+       y = "Total Delay",
+       subtitle = "Average Delay Value shown to the right of bar",
+       caption = "Southwest and American Airlines are the highest airlines with total arrival delays")
+
+```
+
+
+
+
+
+Departure delays per airline by months:
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+D_delay100 = D %>% 
+  filter(DepDelay > 100) 
+
+ggplot(D_delay100) +
+  geom_point(mapping = aes(x= Month, y = DepDelay, color = UniqueCarrier)) +
+  xlim(0,12)+
+  facet_wrap(~UniqueCarrier, nrow=4) +
+  labs(title = "Total Departure Delays by Airline by Month",
+       x = "Month",
+       y = "Total Delay",
+       colour = "Airline Name",
+       caption = "Most of the delays per airline is in the middle of the year.
+            This graph should give you a hint in which airline to choose based on the
+       date of your flight from Austin.")
+
+```
+
+
+
+Arrival delays per airline by months:
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+A_delay100 = D %>% 
+  filter(DepDelay > 100) 
+
+ggplot(A_delay100) +
+  geom_point(mapping = aes(x= Month, y = ArrDelay, color = UniqueCarrier)) +
+  xlim(0,12)+
+  facet_wrap(~UniqueCarrier, nrow=4) +
+  labs(title = "Total Arrival Delays by Airline by Month",
+       x = "Month",
+       y = "Total Delay",
+       colour = "Airline Name",
+       caption = "Most of the delays per airline is in the middle of the year.
+            This graph should give you a hint in which airline to choose based on the
+       date of your flight to Austin.")
+```
+
+
+
+
+
+Now let's analyze the top 2 airlines with highest total delays:
+
+Southwest
+Departure:
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+D_WN = D %>% 
+  filter(UniqueCarrier=="WN" & !is.na(Origin)& !is.na(Origin)) %>%   
+  group_by(Origin) %>%
+  summarise(n = length(Origin), total = sum(DepDelay), avrdelay3 = mean(DepDelay)) %>%
+  arrange(desc(n)) %>%
+  data.frame() %>%
+  top_n(20, wt=n)
+
+ggplot(D_WN, aes(x=reorder(Origin, n), y=n, label=round(avrdelay3, digits = 0))) + 
+  geom_bar(stat="identity", fill="blue") +
+  coord_flip() +
+  geom_text(position=position_dodge(width=0.5), hjust=-0.25) + 
+  labs(title = "Total Departure Delays by Origin Airport for Southwest Airlines",
+       x = "Origin Airport",
+       y = "Total Delay",
+       subtitle = "Average Delay Value shown to the right of bar",
+       caption = "Since the data is about flights from and to Austin, it is expected to have Austin on the top.
+       However most other delays are going to Dallas, Houstn, and Pheonix.")
+
+```
+
+
+
+Southwest Airlines
+Arrival:
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+A_WN = D %>% 
+  filter(UniqueCarrier=="WN" & !is.na(Origin)& !is.na(Origin)) %>%   
+  group_by(Origin) %>%
+  summarise(n = length(Origin), total = sum(ArrDelay), avrdelay5 = mean(ArrDelay)) %>%
+  arrange(desc(n)) %>%
+  data.frame() %>%
+  top_n(20, wt=n)
+
+ggplot(A_WN, aes(x=reorder(Origin, n), y=n, label=round(avrdelay5, digits = 0))) + 
+  geom_bar(stat="identity", fill="blue") +
+  coord_flip() +
+  geom_text(position=position_dodge(width=0.5), hjust=-0.25) + 
+  labs(title = "Total Departure Delays by Origin Airport for Southwest Airlines",
+       x = "Origin Airport",
+       y = "Total Delay",
+       subtitle = "Average Delay Value shown to the right of bar",
+       caption = "Since the data is about flights from and to Austin, it is expected to have Austin on the top.
+       However most other delays are also from Dallas, Houstn, and Pheonix.")
+
+
+```
+
+
+Now Lets move to American Airlines
+Departure:
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+D_AA = D %>% 
+  filter(UniqueCarrier=="AA" & !is.na(Origin)& !is.na(Origin)) %>%   
+  group_by(Origin) %>%
+  summarise(n = length(Origin), total = sum(DepDelay), avrdelay3 = mean(DepDelay)) %>%
+  arrange(desc(n)) %>%
+  data.frame() %>%
+  top_n(20, wt=n)
+
+ggplot(D_AA, aes(x=reorder(Origin, n), y=n, label=round(avrdelay3, digits = 0))) + 
+  geom_bar(stat="identity", fill="blue") +
+  coord_flip() +
+  geom_text(position=position_dodge(width=0.5), hjust=-0.25) + 
+  labs(title = "Total Departure Delays by Origin Airport for American Airlines",
+       x = "Origin Airport",
+       y = "Total Delay",
+       subtitle = "Average Delay Value shown to the right of bar",
+       caption = "Since the data is about flights from and to Austin, it is expected to have Austin on the top.
+       However most other delays are going to Dallas, Chicago, and Los Angles")
+
+```
+
+
+American Airlines
+Arrival:
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+A_AA = D %>% 
+  filter(UniqueCarrier=="AA" & !is.na(Origin)& !is.na(Origin)) %>%   
+  group_by(Origin) %>%
+  summarise(n = length(Origin), total = sum(ArrDelay), avrdelay4 = mean(ArrDelay)) %>%
+  arrange(desc(n)) %>%
+  data.frame() %>%
+  top_n(20, wt=n)
+
+ggplot(A_AA, aes(x=reorder(Origin, n), y=n, label=round(avrdelay4, digits = 0))) + 
+  geom_bar(stat="identity", fill="blue") +
+  coord_flip() +
+  geom_text(position=position_dodge(width=0.5), hjust=-0.25) + 
+  labs(title = "Total Departure Delays by Origin Airport for American Airlines",
+       x = "Origin Airport",
+       y = "Total Delay",
+       subtitle = "Average Delay Value shown to the right of bar",
+       caption = "Since the data is about flights from and to Austin, it is expected to have Austin on the top.
+       However most other delays are going to Dallas and Chicago.")
+```
+
+
+
+
+
+I hope now you have a better idea in how to plan for your spring break. Make sure you don't miss any minute.
+
+
+
+Q2
+
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(data.table)
+library(dplyr)
+```
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+billboard = read.csv('../Assignments/billboard.csv')
+
+```
+
+
+PartA
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+billboard = billboard %>%
+  select(performer, song, year, week, week_position, song_id, weeks_on_chart)
+
+top_songs = billboard %>%
+  group_by(performer, song)
+yes = top_songs %>%
+    tally() %>%
+    arrange(desc(n)) %>%
+    data.frame() %>%
+    top_n(10, wt=n)
+  
+  colnames(yes)[3] <- "count"
+  
+  view(yes)
+```
+
+  
+  
+  As we can see, Radioactive by Imagine dragons is the most popular song according to the billboard.
+  
+  PartB
+  
+  
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+div_songs = billboard %>%
+    group_by(performer, song, year) %>%
+  filter_all(all_vars(.!=1958 & .!=2021))
+  view(div_songs)
+  
+  group_by_year <- 
+    data.table(div_songs)[ , .(unique_songs = length(unique(song))), 
+                     by = year] 
+  
+  ggplot(group_by_year, aes(x=year)) + 
+    geom_line(aes(y = unique_songs), color = "darkred") +
+    labs(x="Year",
+         y="number of unique songs",
+         title="Musical Diversity",
+         subtitle = "The number of unique songs appeared on the Billboard by the year",
+         caption = "We can notice how in the 60's, the music diversity was increasing
+         reaching 800 uniqe songs in a year. However, the number started to fall sharply
+         from the late 60's to the end of the century with almost half of the peak value giving it sharp negative trend. Afterward,
+         with the boom of the Pop music in the US, the diversity surged again reaching almost 600 songs in 2010.
+         Then it fall again by about 100 in magnitude by 2014, then bounced back reaching the 800 level by 2020.
+         This might be because of the rise of the social media, and the strong music marketing industry recently.")
+```
+  
+
+  
+  
+  
+  PartC
+ 
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+hit_songs = billboard %>%
+   select(weeks_on_chart, performer, song) %>%
+   group_by(performer, song) %>%
+   summarize(count = n()) %>%
+   arrange(desc(count)) %>%
+   filter(count>=10)
+
+ view(hit_songs)
+ 
+ singers = hit_songs %>%
+   group_by(performer) %>%
+   summarize(count = n()) %>%
+   filter(count >= 30) %>%
+   arrange(desc(count))
+
+ view(singers) 
+
+ ggplot(singers) +
+   geom_col(aes(fct_reorder(performer, count), count)) +
+   coord_flip(expand = TRUE) +
+   labs(x="Singers",
+        title = "10-Week Hit!",
+      caption = "As we can see, there are 19 singers who were able to have at least
+      30 songs for a 10-week hit on the Billboard. Feel sorry for Imagine Dragons not to be in this list.")
+  
+  
+
+
+
+```
+ 
+ 
+ Q3
+ 
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+ library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(matrixStats)
+
+ olympics_top20 = read.csv('../Assignments/olympics_top20.csv')
+
+```
+ 
+ 
+
+
+1st part
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+height_percentile = olympics_top20 %>%
+  select(sex, height, sport) %>%
+  group_by(height) %>%
+  filter(sex == "F" & sport == "Athletics") %>%
+  summarise(quantile(olympics_top20$height, 0.95))
+
+head(height_percentile)
+
+Female_95_Percentile = 197
+
+Female_95_Percentile
+
+```
+So The 95th percentile of height for females in the Atheleics games is 197
+
+
+  
+2nd part
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+t =  olympics_top20 %>%
+  select(sex, height, event) %>%
+  group_by(event) %>%
+  filter(sex == "F" & str_detect(event, 'Single')) %>%
+  data.frame() 
+
+
+##count no. of events after filter
+t1 = xtabs(~event, data=t) %>%
+  data.frame()
+
+#200 m Sd
+
+t200 = t %>%
+  filter(event == "Canoeing Women's Kayak Singles, 200 metres") 
+
+
+w200mSd = sd(t200$height)
+
+#500 m Sd
+
+t500 = t %>%
+  filter(event == "Canoeing Women's Kayak Singles, 500 metres") 
+
+
+w500mSd = sd(t500$height)
+
+# Slalom
+
+tslalom = t %>%
+  filter(event == "Canoeing Women's Kayak Singles, Slalom") 
+
+
+wslalomSd = sd(tslalom$height)
+
+
+# Rowing
+
+trowing = t %>%
+  filter(event == "Rowing Women's Single Sculls") 
+
+
+wrowingSd = sd(trowing$height)
+
+Stdev = c(w200mSd, w500mSd, wslalomSd, wrowingSd)
+
+
+Stdev
+```
+
+So, Canoeing Women's Kayak Singles 500 metres event has the highest standard deviation in height
+
+
+part 3
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+zf =  olympics_top20 %>%
+  group_by(year, age) %>% 
+  filter(sport == "Swimming" & sex == "F") %>%
+  data.frame() 
+
+setDT(zf)
+
+zm =  olympics_top20 %>%
+  select(sex, age, sport, year) %>%
+  group_by(year, age) %>% 
+  filter(sport == "Swimming" & sex == "M") %>%
+  data.frame() 
+
+setDT(zm)
+
+zfmean = zf[ ,list(mean=mean(age)), by=year]
+
+zmmean = zm[ ,list(mean=mean(age)), by=year]
+
+
+
+
+setDF(zfmean)
+setDF(zmmean)
+
+colnames(zfmean)[2] <- "Female_Avg_Age"
+colnames(zmmean)[2] <- "Male_Avg_Age"
+
+Age_Mean = zmmean %>% full_join(zfmean)
+
+
+ggplot(Age_Mean, aes(x=year)) + 
+  geom_line(aes(y = Female_Avg_Age), color = "darkred") +
+  geom_line(aes(y = Male_Avg_Age), color="steelblue") +
+  labs(x="Year",
+       y="Avg Age",
+       title="Avg Age of Swimmers Across the Years",
+         subtitle = "Red is Female Blue is Male",
+       caption = "We can notice that, The sport was only for males before it started to be for females as well regulrly in the 50's.
+       However, it was played once for females in 1924 then purse the game eventually in the mid of the century.
+       The chart excluded the observations in 1924 to not do any predictions for the gapped era.
+       The average age of male has increased drastically from 19 to 32 in jus 25 years, followed by a sharp
+       decline in the next few years. Then the average start to increase gradually along with females 
+       reaching about 24 years old for men and about 23 years old for women.")
+
+
+ 
+```
+
+As it shown in the graph, we can notice that, The sport was only for males before it started to be for females as well regularly in the 50's.However, it was played once for females in 1924 then purse the game eventually in the mid of the century.
+
+The chart excluded the observations in 1924 to not do any predictions for the gapped era.
+ The average age of male has increased drastically from 19 to 32 in jus 25 years, followed by a sharp decline in the next few years. Then the average start to increase gradually along with females reaching  about 24 years old for men and about 23 years old for women.
+ 
+ 
+ Q4
+ 
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(rsample)  # for creating train/test splits
+library(caret)
+library(modelr)
+library(parallel)
+library(foreach)
+library(dplyr)
+
+sclass = read.csv('../Assignments/sclass.csv')
+
+
+```
+ 
+Filter the data by trim
+ 
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+
+class350 = sclass %>%
+  select(price, trim, mileage) %>%
+  filter(trim == "350")
+
+class63AMG = sclass %>%
+  select(price, trim, mileage) %>%
+  filter(trim == "63 AMG")
+
+summary(class350)
+summary(class63AMG)
+```
+
+
+
+
+
+
+plot the data for both trims
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+ggplot(data = class350) + 
+  geom_point(mapping = aes(x = mileage, y = price), color='darkgrey') +
+ labs(title = "Price of 350 S Class by Milages")
+
+ggplot(data = class63AMG) + 
+  geom_point(mapping = aes(x = mileage, y = price), color='darkgrey') +
+  labs(title = "Price of 63 AMG S Class by Milages")
+
+```
+
+
+
+
+Make a train-test split for both trims
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+class350_split =  initial_split(class350, prop=0.8)
+class350_train = training(class350_split)
+class350_test = testing(class350_split)
+
+class63AMG_split =  initial_split(class63AMG, prop=0.8)
+class63AMG_train = training(class63AMG_split)
+class63AMG_test  = testing(class63AMG_split)
+```
+
+
+
+Fit a linear model for both trims
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+lm1_350 = lm(price ~ mileage, data=class350_train)
+coef(lm1_350)
+
+ggplot(data = lm1_350) + 
+  geom_point(mapping = aes(x = mileage, y = price)) +
+  geom_abline(intercept = 71541.86, slope = -0.5804595, color='red') +
+  labs(title = "Fitted model for 350 S Class")
+
+lm1_63AMG = lm(price ~ mileage, data=class63AMG_train)
+coef(lm1_63AMG)
+
+ggplot(data = lm1_63AMG) + 
+  geom_point(mapping = aes(x = mileage, y = price)) +
+  geom_abline(intercept = 71541.86, slope = -0.5804595, color='red') +
+  labs(title = "Fitted model for 63AMG S Class")
+
+```
+
+
+
+
+
+
+
+
+Now lets try KNN model with K = 2, 5, 10, 20, 30, 35, 40, 45, 50, 55, 60, 80, 100, 150, 200 
+
+First for 350 S Class and we will view the RMSE
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+knn2_350 = knnreg(price ~ mileage, data=class350_train, k=2)
+rmse(knn2_350, class350_test)
+
+knn5_350 = knnreg(price ~ mileage, data=class350_train, k=5)
+rmse(knn5_350, class350_test)
+
+knn10_350 = knnreg(price ~ mileage, data=class350_train, k=10)
+rmse(knn10_350, class350_test)
+
+knn20_350 = knnreg(price ~ mileage, data=class350_train, k=20)
+rmse(knn20_350, class350_test)
+
+knn30_350 = knnreg(price ~ mileage, data=class350_train, k=30)
+rmse(knn30_350, class350_test)
+
+knn35_350 = knnreg(price ~ mileage, data=class350_train, k=35)
+rmse(knn35_350, class350_test)
+
+knn40_350 = knnreg(price ~ mileage, data=class350_train, k=40)
+rmse(knn40_350, class350_test)
+
+knn45_350 = knnreg(price ~ mileage, data=class350_train, k=45)
+rmse(knn45_350, class350_test)
+
+knn50_350 = knnreg(price ~ mileage, data=class350_train, k=50)
+rmse(knn50_350, class350_test)
+
+knn55_350 = knnreg(price ~ mileage, data=class350_train, k=55)
+rmse(knn55_350, class350_test)
+
+knn60_350 = knnreg(price ~ mileage, data=class350_train, k=60)
+rmse(knn60_350, class350_test)
+
+knn80_350 = knnreg(price ~ mileage, data=class350_train, k=80)
+rmse(knn80_350, class350_test)
+
+knn100_350 = knnreg(price ~ mileage, data=class350_train, k=100)
+rmse(knn100_350, class350_test)
+
+knn150_350 = knnreg(price ~ mileage, data=class350_train, k=150)
+rmse(knn150_350, class350_test)
+
+knn200_350 = knnreg(price ~ mileage, data=class350_train, k=200)
+rmse(knn200_350, class350_test)
+
+
+```
+
+
+
+Now the same for 63AMG S Class
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+knn2_63AMG = knnreg(price ~ mileage, data=class63AMG_train, k=2)
+rmse(knn2_63AMG, class63AMG_test)
+
+knn5_63AMG = knnreg(price ~ mileage, data=class63AMG_train, k=5)
+rmse(knn5_63AMG, class63AMG_test)
+
+knn10_63AMG = knnreg(price ~ mileage, data=class63AMG_train, k=10)
+rmse(knn10_63AMG, class63AMG_test)
+
+knn20_63AMG = knnreg(price ~ mileage, data=class63AMG_train, k=20)
+rmse(knn20_63AMG, class63AMG_test)
+
+knn30_63AMG = knnreg(price ~ mileage, data=class63AMG_train, k=30)
+rmse(knn30_63AMG, class63AMG_test)
+
+knn35_63AMG = knnreg(price ~ mileage, data=class63AMG_train, k=35)
+rmse(knn35_63AMG, class63AMG_test)
+
+knn40_63AMG = knnreg(price ~ mileage, data=class63AMG_train, k=40)
+rmse(knn40_63AMG, class63AMG_test)
+
+knn45_63AMG = knnreg(price ~ mileage, data=class63AMG_train, k=45)
+rmse(knn45_63AMG, class63AMG_test)
+
+knn50_63AMG = knnreg(price ~ mileage, data=class63AMG_train, k=50)
+rmse(knn50_63AMG, class63AMG_test)
+
+knn55_63AMG = knnreg(price ~ mileage, data=class63AMG_train, k=55)
+rmse(knn55_63AMG, class63AMG_test)
+
+knn60_63AMG = knnreg(price ~ mileage, data=class63AMG_train, k=60)
+rmse(knn60_63AMG, class63AMG_test)
+
+knn80_63AMG = knnreg(price ~ mileage, data=class63AMG_train, k=80)
+rmse(knn80_63AMG, class63AMG_test)
+
+knn100_63AMG = knnreg(price ~ mileage, data=class63AMG_train, k=100)
+rmse(knn100_63AMG, class63AMG_test)
+
+knn150_63AMG = knnreg(price ~ mileage, data=class63AMG_train, k=150)
+rmse(knn150_63AMG, class63AMG_test)
+
+knn200_63AMG = knnreg(price ~ mileage, data=class63AMG_train, k=200)
+rmse(knn200_63AMG, class63AMG_test)
+
+```
+
+
+
+
+Lets plot the fit
+
+350 S Class
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+class350_testK2 = class350_test %>%
+  mutate(class350_predK2 = predict(knn2_350, class350_test))
+
+K2_test = ggplot(data = class350_testK2) + 
+  geom_point(mapping = aes(x = mileage, y = price), alpha=0.3) +
+   labs(title = "Plot Graph of 350 S Class ")
+ 
+
+K2_test
+
+# K2 predictions
+K2_test + geom_line(aes(x = mileage, y = class350_predK2), color='red', size=1.5) +
+   labs(title = "KNN fitting model of 350 S Class for K2 ")
+
+#K5
+
+class350_testK5 = class350_test %>%
+  mutate(class350_predK5 = predict(knn5_350, class350_test))
+
+K5_test = ggplot(data = class350_testK5) + 
+  geom_point(mapping = aes(x = mileage, y = price), alpha=0.3) 
+
+
+
+# K5 predictions
+K5_test + geom_line(aes(x = mileage, y = class350_predK5), color='red', size=1.5) +
+  labs(title = "KNN fitting model of 350 S Class for K5 ")
+
+#K10
+
+class350_testK10 = class350_test %>%
+  mutate(class350_predK10 = predict(knn10_350, class350_test))
+
+K10_test = ggplot(data = class350_testK10) + 
+  geom_point(mapping = aes(x = mileage, y = price), alpha=0.3) 
+
+
+
+# K10 predictions
+K10_test + geom_line(aes(x = mileage, y = class350_predK10), color='red', size=1.5) +
+  labs(title = "KNN fitting model of 350 S Class for K10 ")
+
+#K20
+
+class350_testK20 = class350_test %>%
+  mutate(class350_predK20 = predict(knn20_350, class350_test))
+
+K20_test = ggplot(data = class350_testK20) + 
+  geom_point(mapping = aes(x = mileage, y = price), alpha=0.3) 
+
+
+
+# K20 predictions
+K20_test + geom_line(aes(x = mileage, y = class350_predK20), color='red', size=1.5) +
+  labs(title = "KNN fitting model of 350 S Class for K20 ")
+
+
+#K30
+
+class350_testK30 = class350_test %>%
+  mutate(class350_predK30 = predict(knn30_350, class350_test))
+
+K30_test = ggplot(data = class350_testK30) + 
+  geom_point(mapping = aes(x = mileage, y = price), alpha=0.3) 
+
+
+
+# K30 predictions
+K30_test + geom_line(aes(x = mileage, y = class350_predK30), color='red', size=1.5) +
+  labs(title = "KNN fitting model of 350 S Class for K30 ")
+
+
+#K35
+
+class350_testK35 = class350_test %>%
+  mutate(class350_predK35 = predict(knn35_350, class350_test))
+
+K35_test = ggplot(data = class350_testK35) + 
+  geom_point(mapping = aes(x = mileage, y = price), alpha=0.3) 
+
+
+
+# K35 predictions
+K35_test + geom_line(aes(x = mileage, y = class350_predK35), color='red', size=1.5) +
+  labs(title = "KNN fitting model of 350 S Class for K35 ")
+
+
+#K40
+
+class350_testK40 = class350_test %>%
+  mutate(class350_predK40 = predict(knn40_350, class350_test))
+
+K40_test = ggplot(data = class350_testK40) + 
+  geom_point(mapping = aes(x = mileage, y = price), alpha=0.3) 
+
+
+
+# K40 predictions
+K40_test + geom_line(aes(x = mileage, y = class350_predK40), color='red', size=1.5) +
+  labs(title = "KNN fitting model of 350 S Class for K40 ")
+
+
+#K45
+
+class350_testK45 = class350_test %>%
+  mutate(class350_predK45 = predict(knn45_350, class350_test))
+
+K45_test = ggplot(data = class350_testK45) + 
+  geom_point(mapping = aes(x = mileage, y = price), alpha=0.3) 
+
+
+
+# K45 predictions
+K45_test + geom_line(aes(x = mileage, y = class350_predK45), color='red', size=1.5) +
+  labs(title = "KNN fitting model of 350 S Class for K45 ")
+
+
+#K50
+
+class350_testK50 = class350_test %>%
+  mutate(class350_predK50 = predict(knn50_350, class350_test))
+
+K50_test = ggplot(data = class350_testK50) + 
+  geom_point(mapping = aes(x = mileage, y = price), alpha=0.3) 
+
+
+
+# K50 predictions
+K50_test + geom_line(aes(x = mileage, y = class350_predK50), color='red', size=1.5) +
+  labs(title = "KNN fitting model of 350 S Class for K50 ")
+
+
+#K55
+
+class350_testK55 = class350_test %>%
+  mutate(class350_predK55 = predict(knn55_350, class350_test))
+
+K55_test = ggplot(data = class350_testK55) + 
+  geom_point(mapping = aes(x = mileage, y = price), alpha=0.3) 
+
+
+
+# K55 predictions
+K55_test + geom_line(aes(x = mileage, y = class350_predK55), color='red', size=1.5) +
+  labs(title = "KNN fitting model of 350 S Class for K55 ")
+
+
+#K60
+
+class350_testK60 = class350_test %>%
+  mutate(class350_predK60 = predict(knn60_350, class350_test))
+
+K60_test = ggplot(data = class350_testK60) + 
+  geom_point(mapping = aes(x = mileage, y = price), alpha=0.3) 
+
+
+
+# K60 predictions
+K60_test + geom_line(aes(x = mileage, y = class350_predK60), color='red', size=1.5) +
+  labs(title = "KNN fitting model of 350 S Class for K60 ")
+
+#K80
+
+class350_testK80 = class350_test %>%
+  mutate(class350_predK80 = predict(knn80_350, class350_test))
+
+K80_test = ggplot(data = class350_testK80) + 
+  geom_point(mapping = aes(x = mileage, y = price), alpha=0.3) 
+
+
+
+# K80 predictions
+K80_test + geom_line(aes(x = mileage, y = class350_predK80), color='red', size=1.5) +
+  labs(title = "KNN fitting model of 350 S Class for K80 ")
+
+
+#K100
+
+class350_testK100 = class350_test %>%
+  mutate(class350_predK100 = predict(knn100_350, class350_test))
+
+K100_test = ggplot(data = class350_testK100) + 
+  geom_point(mapping = aes(x = mileage, y = price), alpha=0.3) 
+
+
+
+# K100 predictions
+K100_test + geom_line(aes(x = mileage, y = class350_predK100), color='red', size=1.5) +
+  labs(title = "KNN fitting model of 350 S Class for K100 ")
+
+
+#K150
+
+class350_testK150 = class350_test %>%
+  mutate(class350_predK150 = predict(knn150_350, class350_test))
+
+K150_test = ggplot(data = class350_testK150) + 
+  geom_point(mapping = aes(x = mileage, y = price), alpha=0.3) 
+
+
+
+# K150 predictions
+K150_test + geom_line(aes(x = mileage, y = class350_predK150), color='red', size=1.5) +
+  labs(title = "KNN fitting model of 350 S Class for K150 ")
+
+
+#K200
+
+class350_testK200 = class350_test %>%
+  mutate(class350_predK200 = predict(knn200_350, class350_test))
+
+K200_test = ggplot(data = class350_testK200) + 
+  geom_point(mapping = aes(x = mileage, y = price), alpha=0.3) 
+
+
+
+# K200 predictions
+K200_test + geom_line(aes(x = mileage, y = class350_predK200), color='red', size=1.5) +
+  labs(title = "KNN fitting model of 350 S Class for K200 ")
+
+
+```
+
+
+
+Now lets have a look at the fitting of 63AMG S Class model
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+#K2
+
+class63AMG_test = class63AMG_test %>%
+  mutate(class63AMG_predK2 = predict(knn2_63AMG, class63AMG_test))
+
+KK2_test = ggplot(data = class63AMG_test) + 
+  geom_point(mapping = aes(x = mileage, y = price), alpha=0.3) +
+  labs(title = "Plot Graph of 63AMG S Class")
+
+KK2_test
+
+# K2 predictions
+KK2_test + geom_line(aes(x = mileage, y = class63AMG_predK2), color='red', size=1.5) +
+  labs(title = "KNN fitting model of 63AMG S Class for K2")
+
+#K5
+
+class63AMG_test = class63AMG_test %>%
+  mutate(class63AMG_predK5 = predict(knn5_63AMG, class63AMG_test))
+
+KK5_test = ggplot(data = class63AMG_test) + 
+  geom_point(mapping = aes(x = mileage, y = price), alpha=0.3) 
+
+
+
+# K5 predictions
+KK5_test + geom_line(aes(x = mileage, y = class63AMG_predK5), color='red', size=1.5) +
+  labs(title = "KNN fitting model of 63AMG S Class for K5")
+
+#K10
+
+class63AMG_test = class63AMG_test %>%
+  mutate(class63AMG_predK10 = predict(knn10_63AMG, class63AMG_test))
+
+KK10_test = ggplot(data = class63AMG_test) + 
+  geom_point(mapping = aes(x = mileage, y = price), alpha=0.3) 
+
+
+
+# K10 predictions
+KK10_test + geom_line(aes(x = mileage, y = class63AMG_predK10), color='red', size=1.5) +
+  labs(title = "KNN fitting model of 63AMG S Class for K10")
+
+#K20
+
+class63AMG_test = class63AMG_test %>%
+  mutate(class63AMG_predK20 = predict(knn20_63AMG, class63AMG_test))
+
+KK20_test = ggplot(data = class63AMG_test) + 
+  geom_point(mapping = aes(x = mileage, y = price), alpha=0.3) +
+  labs(title = "KNN fitting model of 63AMG S Class for K20")
+
+
+
+# K20 predictions
+KK20_test + geom_line(aes(x = mileage, y = class63AMG_predK20), color='red', size=1.5)
+
+
+#K30
+
+class63AMG_test = class63AMG_test %>%
+  mutate(class63AMG_predK30 = predict(knn30_63AMG, class63AMG_test))
+
+KK30_test = ggplot(data = class63AMG_test) + 
+  geom_point(mapping = aes(x = mileage, y = price), alpha=0.3) 
+
+
+
+# K30 predictions
+KK30_test + geom_line(aes(x = mileage, y = class63AMG_predK30), color='red', size=1.5) +
+  labs(title = "KNN fitting model of 63AMG S Class for K30")
+
+
+
+#K35
+
+class63AMG_test = class63AMG_test %>%
+  mutate(class63AMG_predK35 = predict(knn35_63AMG, class63AMG_test))
+
+KK35_test = ggplot(data = class63AMG_test) + 
+  geom_point(mapping = aes(x = mileage, y = price), alpha=0.3) 
+
+
+
+# K35 predictions
+KK35_test + geom_line(aes(x = mileage, y = class63AMG_predK35), color='red', size=1.5) +
+  labs(title = "KNN fitting model of 63AMG S Class for K35")
+
+
+#K40
+
+class63AMG_test = class63AMG_test %>%
+  mutate(class63AMG_predK40 = predict(knn40_63AMG, class63AMG_test))
+
+KK40_test = ggplot(data = class63AMG_test) + 
+  geom_point(mapping = aes(x = mileage, y = price), alpha=0.3) 
+
+
+
+# K40 predictions
+KK40_test + geom_line(aes(x = mileage, y = class63AMG_predK40), color='red', size=1.5) +
+  labs(title = "KNN fitting model of 63AMG S Class for K40")
+
+
+#K45
+
+class63AMG_test = class63AMG_test %>%
+  mutate(class63AMG_predK45 = predict(knn45_63AMG, class63AMG_test))
+
+KK45_test = ggplot(data = class63AMG_test) + 
+  geom_point(mapping = aes(x = mileage, y = price), alpha=0.3) 
+
+
+
+# K45 predictions
+KK45_test + geom_line(aes(x = mileage, y = class63AMG_predK45), color='red', size=1.5) +
+  labs(title = "KNN fitting model of 63AMG S Class for K45")
+
+
+#K50
+
+class63AMG_test = class63AMG_test %>%
+  mutate(class63AMG_predK50 = predict(knn50_63AMG, class63AMG_test))
+
+KK50_test = ggplot(data = class63AMG_test) + 
+  geom_point(mapping = aes(x = mileage, y = price), alpha=0.3) 
+
+
+
+# K50 predictions
+KK50_test + geom_line(aes(x = mileage, y = class63AMG_predK50), color='red', size=1.5) +
+  labs(title = "KNN fitting model of 63AMG S Class for K50")
+
+
+#K55
+
+class63AMG_test = class63AMG_test %>%
+  mutate(class63AMG_predK55 = predict(knn55_63AMG, class63AMG_test))
+
+KK55_test = ggplot(data = class63AMG_test) + 
+  geom_point(mapping = aes(x = mileage, y = price), alpha=0.3) 
+
+
+
+# K55 predictions
+KK55_test + geom_line(aes(x = mileage, y = class63AMG_predK55), color='red', size=1.5) +
+  labs(title = "KNN fitting model of 63AMG S Class for K55")
+
+
+#K60
+
+class63AMG_test = class63AMG_test %>%
+  mutate(class63AMG_predK60 = predict(knn60_63AMG, class63AMG_test))
+
+KK60_test = ggplot(data = class63AMG_test) + 
+  geom_point(mapping = aes(x = mileage, y = price), alpha=0.3) 
+
+
+
+# K60 predictions
+KK60_test + geom_line(aes(x = mileage, y = class63AMG_predK60), color='red', size=1.5) +
+  labs(title = "KNN fitting model of 63AMG S Class for K60")
+
+#K80
+
+class63AMG_test = class63AMG_test %>%
+  mutate(class63AMG_predK80 = predict(knn80_63AMG, class63AMG_test))
+
+KK80_test = ggplot(data = class63AMG_test) + 
+  geom_point(mapping = aes(x = mileage, y = price), alpha=0.3) 
+
+
+
+# K80 predictions
+KK80_test + geom_line(aes(x = mileage, y = class63AMG_predK80), color='red', size=1.5) +
+  labs(title = "KNN fitting model of 63AMG S Class for K80")
+
+
+#K100
+
+class63AMG_test = class63AMG_test %>%
+  mutate(class63AMG_predK100 = predict(knn100_63AMG, class63AMG_test))
+
+KK100_test = ggplot(data = class63AMG_test) + 
+  geom_point(mapping = aes(x = mileage, y = price), alpha=0.3) 
+
+
+
+# K100 predictions
+KK100_test + geom_line(aes(x = mileage, y = class63AMG_predK100), color='red', size=1.5) +
+  labs(title = "KNN fitting model of 63AMG S Class for K100")
+
+
+#K150
+
+class63AMG_test = class63AMG_test %>%
+  mutate(class63AMG_predK150 = predict(knn150_63AMG, class63AMG_test))
+
+KK150_test = ggplot(data = class63AMG_test) + 
+  geom_point(mapping = aes(x = mileage, y = price), alpha=0.3) 
+
+
+
+# K150 predictions
+KK150_test + geom_line(aes(x = mileage, y = class63AMG_predK150), color='red', size=1.5) +
+  labs(title = "KNN fitting model of 63AMG S Class for K150")
+
+
+#K200
+
+class63AMG_test = class63AMG_test %>%
+  mutate(class63AMG_predK200 = predict(knn200_63AMG, class63AMG_test))
+
+KK200_test = ggplot(data = class63AMG_test) + 
+  geom_point(mapping = aes(x = mileage, y = price), alpha=0.3) 
+
+
+
+# K200 predictions
+KK200_test + geom_line(aes(x = mileage, y = class63AMG_predK200), color='red', size=1.5) +
+  labs(title = "KNN fitting model of 63AMG S Class for K200")
+
+```
+
+
+## Class63AMG
+
+
+Now lets do the cross validation for both trims
+
+```{r,echo=FALSE, message=FALSE, warning=FALSE}
+
+# K-fold cross validation class350
+
+
+K_folds = 5
+
+class350_folds = crossv_kfold(class350, k=K_folds)
+
+
+# map the model-fitting function over the training sets
+models_350 = map(class350_folds$train, ~ knnreg(price ~ mileage, k=100, data = ., use.all=FALSE))
+
+
+# map the RMSE calculation over the trained models and test sets simultaneously
+errs_350 = map2_dbl(models_350, class350_folds$test, modelr::rmse)
+
+
+mean(errs_350)
+sd(errs_350)/sqrt(K_folds)   # approximate standard error of CV error
+
+
+# so now we can do this across a range of k
+k_grid = c(2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 18, 20, 25, 30, 35, 40, 45, 50, 55, 60, 80,
+           100, 150, 200)
+
+
+cv_grid = foreach(k = k_grid, .combine='rbind') %dopar% {
+  models_350 = map(class350_folds$train, ~ knnreg(price ~ mileage, k=k, data = ., use.all=FALSE))
+  errs_350 = map2_dbl(models_350, class350_folds$test, modelr::rmse)
+  c(k=k, errs_350 = mean(errs_350), std_err_350 = sd(errs_350)/sqrt(K_folds))
+} %>% as.data.frame
+
+
+# plot means and std errors versus k
+ggplot(cv_grid) + 
+  geom_point(aes(x=k, y=errs_350)) + 
+  geom_errorbar(aes(x=k, ymin = errs_350-std_err_350, ymax = errs_350+std_err_350)) + 
+  scale_x_log10() +
+  labs(title = "RMSE per K for 350 Class",
+       y = "RMSE")
+
+
+### 63AMG Class
+
+
+K_folds = 5
+
+class63AMG_folds = crossv_kfold(class63AMG, k=K_folds)
+
+
+# map the model-fitting function over the training sets
+models_63AMG = map(class63AMG_folds$train, ~ knnreg(price ~ mileage, k=100, data = ., use.all=FALSE))
+
+
+# map the RMSE calculation over the trained models and test sets simultaneously
+errs_63AMG = map2_dbl(models_63AMG, class63AMG_folds$test, modelr::rmse)
+
+
+mean(errs_63AMG)
+sd(errs_63AMG)/sqrt(K_folds)   # approximate standard error of CV error
+
+
+# so now we can do this across a range of k
+k_grid = c(2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 18, 20, 25, 30, 35, 40, 45, 50, 55, 60, 80,
+           100, 150, 200)
+
+
+cv_grid_63AMG = foreach(k = k_grid, .combine='rbind') %dopar% {
+  models_63AMG = map(class63AMG_folds$train, ~ knnreg(price ~ mileage, k=k, data = ., use.all=FALSE))
+  errs_63AMG = map2_dbl(models_63AMG, class63AMG_folds$test, modelr::rmse)
+  c(k=k, errs_63AMG = mean(errs_63AMG), std_err_63AMG = sd(errs_63AMG)/sqrt(K_folds))
+} %>% as.data.frame
+
+
+# plot means and std errors versus k
+ggplot(cv_grid_63AMG) + 
+  geom_point(aes(x=k, y=errs_63AMG)) + 
+  geom_errorbar(aes(x=k, ymin = errs_63AMG-std_err_63AMG, ymax = errs_63AMG+std_err_63AMG)) + 
+  scale_x_log10() +
+  labs(title = "RMSE per K for 63AMG Class",
+       y = "RMSE")
+
+
+
+
+```
+
+
+
+
+Based on the RMSE numbers, I would use K35 for 350 S Class and K80 or K100 for 63AMG Class.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+# 350 Class K20 predictions
+K20_test + geom_line(aes(x = mileage, y = class350_predK20), color='red', size=1.5) +
+  labs(title = "Optimal KNN Fitting Model for 350 S Class KNN35")
+
+
+# 63AMG Class K100 predictions
+KK100_test + geom_line(aes(x = mileage, y = class63AMG_predK100), color='red', size=1.5) +
+    labs(title = "Optimal KNN Fitting Model for 63 AMG S Class KNN100")
+
+
+```
+
+
+
+
+So 63 AMG class has the higher optimal value of K since it has more clustered obs in different areas of the graph. Also the plot points are more scattered than for 350 Class. So, the predicted line might have more bias but less variance. 
+

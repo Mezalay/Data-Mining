@@ -1,0 +1,645 @@
+---
+title: "ECO 935 Homework 2: Ahmed Almezail"
+output: md_document
+---
+
+Q1
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, results='hide'}
+library(tidyverse)
+library(ggplot2)
+library(dplyr)
+library(esquisse)
+library(RColorBrewer)
+library(modelr)
+library(rsample)
+library(mosaic)
+library(fastDummies)
+library(caret)
+library(foreach)
+library(parallel)
+library(gamlr)
+library(knitr)
+library(parallel)
+library(ROCR)
+
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, results='hide'}
+capmetro_UT = read.csv('../data/capmetro_UT.csv')
+
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+# Recode the categorical variables in sensible, rather than alphabetical, order
+capmetro_UT = mutate(capmetro_UT,
+               day_of_week = factor(day_of_week,
+                 levels=c("Mon", "Tue", "Wed","Thu", "Fri", "Sat", "Sun")),
+               month = factor(month,
+                 levels=c("Sep", "Oct","Nov")))
+```
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+ Avg_capmetro_UT = capmetro_UT %>%
+  group_by(hour_of_day, day_of_week, month) %>%
+  summarise_at(vars(boarding), list("Average Boarding per hour" = mean)) %>%
+  data_frame()
+
+```
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+ggplot(Avg_capmetro_UT) +
+ aes(x = hour_of_day, y = `Average Boarding per hour`, colour = month, group = month) +
+ geom_line(size = 0.5) +
+ scale_color_viridis_d(option = "cividis", direction = 1) +
+ labs(x = "Hour of Day", 
+ y = "Average Boardings", title = "Average Boardings by the Hour", subtitle = "The average riders on Capital Metro at Austin", 
+ caption = "We can observe that most of the peak hour is between 3:00 pm and 4:30 pm 
+ at all the weekdays on the3 different months. However, we can notice that it is 
+ almost a flat line in the weekend with a very low boarding riders to the bus network. 
+ That's expected since huge proportion of the riders are UT students, and there are 
+ no classes on the weekends. An interesting observation is how the average boarding
+ riders on Monday in September is less than on the other 2 months. 
+ That's because of the Labor Day holiday which is on the first Monday of every September. 
+ So that's is reflected on the graph since no classes on that day and many employees have holidays as well. 
+ A similar case goes with Wednesday, Thursday, and Friday in November. 
+ We can notice how lower it is comparing with the average boarding on the other weekdays in November. 
+ That's simply because of the Thanksgiving Holiday which there are no classes as well on those days. 
+ Those holidays affect the average lines and makes it lower than its peers.") +
+ theme_minimal() +
+ facet_wrap(vars(day_of_week))
+
+
+```
+
+
+
+
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+ggplot(capmetro_UT) +
+ aes(x = temperature, y = boarding, colour = weekend, group = month) +
+ geom_point(size = 0.5) +
+ scale_color_viridis_d(option = "cividis", direction = 1) +
+ labs(x = "Temperature", 
+ y = "Boardings", title = "Number of Boardings vs Temperature", subtitle = "The Number of boardings for every 15 min on Capital Metro at Austin", 
+ caption = "Based on the graph above, it is clear that riders are less on the weekend than on weekdays 
+ as well as less on the first and last operating hours. In addition, we could also notice how temperature 
+ is not a major player in affecting the numbers of riders on the bus. 
+ In the peak hours we could notice a small effect based on the graphs showing that students tend to 
+ use the bus more often when temperature is increasing.") +
+ theme_minimal() +
+ facet_wrap(vars(hour_of_day))
+
+```
+
+
+
+
+
+Q2
+
+Lets have a look to the data
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+data(SaratogaHouses)
+glimpse(SaratogaHouses)
+
+```
+
+Now we want to comare a better model than the one in the class
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+# Split into training and testing sets
+saratoga_split = initial_split(SaratogaHouses, prop = 0.8)
+saratoga_train = training(saratoga_split)
+saratoga_test = testing(saratoga_split)
+
+lm_class = lm(price ~ . - pctCollege - sewer - waterfront - landValue - newConstruction, data=saratoga_train)
+
+
+lm_me = lm(price ~ (. - rooms -centralAir - fuel - fireplaces- pctCollege - sewer - waterfront - landValue - newConstruction)*(landValue), data=saratoga_train)
+
+
+coef(lm_class) %>% round(0)
+coef(lm_me) %>% round(0)
+
+# Predictions out of sample
+# Root mean squared error
+
+rmse(lm_class, saratoga_test)
+rmse(lm_me, saratoga_test)
+
+
+
+```
+
+This model have better RMSE than the one in the class.
+
+
+Now lets use KNN model...
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+##KNN Model
+
+
+
+
+
+
+saratoga_split = initial_split(SaratogaHouses, prop = 0.8) 
+saratoga_train = training(saratoga_split)
+saratoga_test = testing(saratoga_split)
+# construct the training and test-set feature matrices
+# note the "-1": this says "don't add a column of ones for the intercept" 
+
+Xtrain = model.matrix(~ age + livingArea  + bedrooms + bathrooms- 1, data=saratoga_train) 
+Xtest = model.matrix(~ age + livingArea + bedrooms + bathrooms - 1, data=saratoga_test)
+
+# training and testing set responses
+ytrain = saratoga_train$price 
+ytest = saratoga_test$price
+
+
+# now rescale:
+scale_train = apply(Xtrain, 2, sd) # calculate std dev for each column 
+Xtilde_train = scale(Xtrain, scale = scale_train)
+Xtilde_test = scale(Xtest, scale = scale_train) # use the training set scales!
+
+
+
+# K-fold cross validation
+K_folds = 5
+saratoga_folds = crossv_kfold(SaratogaHouses, k=K_folds)
+# create a grid of K values -- the precise grid isn't important as long # as you cover a wide range
+k_grid = seq(2, 100, by=2)
+# For each value of k, map the model-fitting function over the folds # Using the same folds is important, otherwise we're not comparing
+# models across the same train/test splits
+cv_grid = foreach(k = k_grid, .combine='rbind') %do% {
+  models = map(saratoga_folds$train, ~ knnreg(price ~  age +  livingArea + bedrooms + bathrooms - 1, k=k, data = ., use.all=FALSE))
+  errs = map2_dbl(models, saratoga_folds$test, modelr::rmse)
+  c(k=k, err = mean(errs), std_err = sd(errs)/sqrt(K_folds))
+  } %>% as.data.frame
+# plot means and std errors versus k
+ggplot(cv_grid) +
+  geom_point(aes(x=k, y=err)) +
+  geom_errorbar(aes(x=k, ymin = err-std_err, ymax = err+std_err)) +
+  labs(y="RMSE", title="RMSE vs k for KNN regression: Saratoga, NY")
+
+min(errs)
+
+```
+
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+
+# fit at optimal k to show predicts on full data set
+k_best = k_grid[which.min(cv_grid$err)]
+knn_best = knnreg(price ~  age +  livingArea + bedrooms + bathrooms - 1, k=k_best, data = SaratogaHouses)
+
+
+```
+
+
+Let us put all three predicate models in one table with the true price.
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+# add predictions to data frame
+SaratogaHouses  = SaratogaHouses %>%
+  mutate(price_predKNN = predict(knn_best, SaratogaHouses)) %>%
+  mutate(price_predlm_me = predict(lm_me, SaratogaHouses)) %>%
+   mutate(price_predlm_class = predict(lm_class, SaratogaHouses)) 
+
+pricing_models = SaratogaHouses %>%
+  select(price, price_predlm_class, price_predlm_me, price_predKNN )
+
+head(pricing_models)
+
+```
+
+##Tax Report Price Predictions
+
+Based on our analysis, we recommend to use the KNN model predictions since it has the lowest RMSE. In this model we emphasize on the most effective factors on property prices. We observe that prices depend more on these factors:-
+
+1- age of the property
+2- living area in square feet
+3- number of bedrooms
+4- number of bathrooms
+
+So we can predict the price of a property house if we know only these 4 information. We believe these factors have the most predictive power in a predictive model. Adding the other factors might affect our accuracy for the model. However, the model has some noticeable difference with the market price, which might be unfair to tax property owners based on it. However, it might give a good indication to the tax authority to have another pricing index as a benchmark against the market value.
+
+So I also provided you with another predictive model that includes more factors such as type of heating system, size of lot, and making all the factors depend on the land value specifically. This way we can emphasize on the land value which what a tax authority value the most. So we can predict the pricing based on this 2nd predictive model, but we are in favor of the one called KNN since it shows lower difference between the preidcted price and the market value on average.
+
+
+
+
+Q3
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+german_credit = read.csv('../data/german_credit.csv')
+
+```
+
+
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+xtabs(~Default + history, data = german_credit)
+
+prop_def = xtabs(~Default + history, data = german_credit) %>%
+  prop.table(margin = 2) %>%
+  data.frame()
+
+
+ggplot(prop_def) +
+ aes(x = Default, fill = history, colour = history, weight = Freq) +
+ geom_bar() +
+ scale_fill_manual(values = c(good = "#003C30", 
+poor = "#F2DA04", terrible = "#C43D0E")) +
+ scale_color_manual(values = c(good = "#003C30", poor = "#F2DA04", 
+terrible = "#C43D0E")) +
+ labs(title = "Probability of Default Conditional on Borrowers' History") +
+ theme_minimal() +
+ facet_wrap(vars(history))
+
+
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+# Recall: the dot (.) says "use all variables not otherwise named"
+logit_def = glm(Default ~ duration + amount + installment + age + history + purpose + foreign, data=german_credit, family='binomial')
+
+coef(logit_def) %>% round(2)
+
+
+def_history = german_credit %>%
+  mutate(default_pred = predict(logit_def, german_credit)) %>%
+  mutate(Default_Odds = exp(default_pred))
+  
+  def_history = def_history %>%
+  select(history, Default, default_pred, Default_Odds)
+  data.frame()
+  
+  
+
+ggplot(def_history) +
+ aes(x = history, y = Default_Odds, colour = history) +
+ geom_jitter(size = 1.5) +
+ scale_color_manual(values = c(good = "#003C30", poor = "#DBC711", terrible = "#C02B05")) +
+ labs(x = "History", 
+ y = "Odds", title = "Expected Odds of Default based on Borrowers' History") +
+ theme_minimal()
+
+
+
+```
+
+
+
+
+
+
+The model suggests that clients with good credit history have higher probability of a loan default than an average client with terrible or poor credit histories. This predictive model can't be rely on since it does not reflect the reality. So we cannot rely on such a model to predict the default odds of a client based on the history. Also, the bank should adjust the methodology of the case control design. I will state below the specific concerns with the model. 
+
+Does the bank offer the same probability of lending a loan regardless of client's credit history? Because it might be the fact that the bank have already dodged a dozen of bullets when they rejected loan proposals from terrible or poor clients. So if this hypothesis is true, we expect to have more default odds for a client with a good credit history since they have less due diligence analysis applied on them. In this case, when we perform the comparison between set of defaulted clients and not-defaulted ones with the same credit history, that would be biased analysis. The conclusion that we can take from this logistic model is that the bank should do more due diligence on clients with good credit history.
+
+or should they? the data needs more diagnostic...
+
+The sample taken is biased since it is not random. Clustering the data based on credit history would give us a biased sample that we could not rely on. When the bank took a random sample of loans and compared that with the set of close matched loans, that means if you are a client with a good credit history, and you have defaulted, then you have higher probability of default if I compare you with clients with the same history. That's because on average, most of clients with good score don't default, so we should not compare them with the same history score. So it should be random sample with random clustering in order to have a reliable data.
+
+In short, just improve the methodology of case design in order to have unbiased model.
+
+
+
+
+
+
+Q3
+
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+hotels_dev = read.csv('../data/hotels_dev.csv')
+hotels_val = read.csv('../data/hotels_val.csv')
+
+```
+
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+# Split into training and testing sets
+hotels_dev_split = initial_split(hotels_dev, prop = 0.8)
+hotels_dev_train = training(hotels_dev_split)
+hotels_dev_test = testing(hotels_dev_split)
+
+
+#Model 1
+
+logit_dev1 = glm(children ~ market_segment + adults + customer_type + is_repeated_guest -1, data=hotels_dev_train, family='binomial')
+logit_dev1_pred = predict(logit_dev1, hotels_dev_test, type ='response')
+
+
+
+#Model 2
+
+logit_dev2 = glm(children ~ . - arrival_date -1, data=hotels_dev_train)
+logit_dev2_pred = predict(logit_dev2, hotels_dev_test, type ='response')
+
+
+
+# Model 3
+
+glm_dev3 = glm(children ~ . -arrival_date - days_in_waiting_list - required_car_parking_spaces + average_daily_rate:total_of_special_requests + is_repeated_guest:total_of_special_requests + is_repeated_guest:average_daily_rate -1, data = hotels_dev_train)
+
+glm_dev3_pred = predict(glm_dev3, hotels_dev_test, type ='response')
+
+```
+
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+
+rmse(logit_dev1, hotels_dev_test)
+rmse(logit_dev2, hotels_dev_test)
+rmse(glm_dev3, hotels_dev_test)
+length(coef(logit_dev1))
+length(coef(logit_dev2))
+length(coef(glm_dev3))
+```
+
+
+
+## Model validation Step 1
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+glm_val = glm(children ~ (. -arrival_date - days_in_waiting_list - required_car_parking_spaces + average_daily_rate:total_of_special_requests + is_repeated_guest:total_of_special_requests + is_repeated_guest:average_daily_rate -1), data=hotels_val)
+
+
+glm_val_test = predict(glm_dev3, hotels_val)
+maybe_test = ifelse(glm_val_test > 0.5, 1, 0)
+confusion = table(children = hotels_val$children, pred_children = maybe_test)
+confusion
+
+
+
+
+sum(diag(confusion))/sum(confusion)
+```
+
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+pred = predict(glm_val, hotels_val, type = "response")
+
+
+roc_pred = prediction(predictions = pred  , labels = hotels_val$children)
+roc_perform = performance(roc_pred , "tpr" , "fpr")
+```
+
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+plot(roc_perform)
+```
+
+
+
+
+
+
+
+## Model validation Step 2
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+
+
+K_folds = 20
+hotels_val_folds = crossv_kfold(hotels_val, k=K_folds)
+
+
+hotels_val = hotels_val %>%
+ mutate(fold_id = rep(1:K_folds, length=nrow(hotels_val)) %>% sample)
+
+
+
+
+hotels_val1 = hotels_val %>%
+ filter(fold_id==1)
+hotels_val1 = hotels_val1 %>%
+ mutate(test = predict(glm_val, hotels_val1),
+        count = sum(test),
+        truecount = sum(children),
+        difference = count - truecount)
+
+
+hotels_val2 = hotels_val %>%
+ filter(fold_id==2)
+hotels_val2 = hotels_val2 %>%
+ mutate(test = predict(glm_val, hotels_val2),
+        count = sum(test),
+        truecount = sum(children),
+        difference = count - truecount)
+
+
+hotels_val3 = hotels_val %>%
+ filter(fold_id==3)
+hotels_val3 = hotels_val3 %>%
+ mutate(test = predict(glm_val, hotels_val3),
+        count = sum(test),
+        truecount = sum(children),
+        difference = count - truecount)
+
+
+hotels_val4 = hotels_val %>%
+ filter(fold_id==4)
+hotels_val4 = hotels_val4 %>%
+ mutate(test = predict(glm_val, hotels_val4),
+        count = sum(test),
+        truecount = sum(children),
+        difference = count - truecount)
+
+
+hotels_val5 = hotels_val %>%
+ filter(fold_id==5)
+hotels_val5 = hotels_val5 %>%
+ mutate(test = predict(glm_val, hotels_val5),
+        count = sum(test),
+        truecount = sum(children),
+        difference = count - truecount)
+
+
+hotels_val6 = hotels_val %>%
+ filter(fold_id==6)
+hotels_val6 = hotels_val6 %>%
+ mutate(test = predict(glm_val, hotels_val6),
+        count = sum(test),
+        truecount = sum(children),
+        difference = count - truecount)
+
+
+hotels_val7 = hotels_val %>%
+ filter(fold_id==7)
+hotels_val7 = hotels_val7 %>%
+ mutate(test = predict(glm_val, hotels_val7),
+        count = sum(test),
+        truecount = sum(children),
+        difference = count - truecount)
+
+
+hotels_val8 = hotels_val %>%
+ filter(fold_id==8)
+hotels_val8 = hotels_val8 %>%
+ mutate(test = predict(glm_val, hotels_val8),
+        count = sum(test),
+        truecount = sum(children),
+        difference = count - truecount)
+
+
+hotels_val9 = hotels_val %>%
+ filter(fold_id==9)
+hotels_val9 = hotels_val9 %>%
+ mutate(test = predict(glm_val, hotels_val9),
+        count = sum(test),
+        truecount = sum(children),
+        difference = count - truecount)
+
+
+hotels_val10 = hotels_val %>%
+ filter(fold_id==10)
+hotels_val10 = hotels_val10 %>%
+ mutate(test = predict(glm_val, hotels_val10),
+        count = sum(test),
+        truecount = sum(children),
+        difference = count - truecount)
+
+
+hotels_val11 = hotels_val %>%
+ filter(fold_id==11)
+hotels_val11 = hotels_val11 %>%
+ mutate(test = predict(glm_val, hotels_val11),
+        count = sum(test),
+        truecount = sum(children),
+        difference = count - truecount)
+
+
+hotels_val12 = hotels_val %>%
+ filter(fold_id==12)
+hotels_val12 = hotels_val12 %>%
+ mutate(test = predict(glm_val, hotels_val12),
+        count = sum(test),
+        truecount = sum(children),
+        difference = count - truecount)
+
+
+hotels_val13 = hotels_val %>%
+ filter(fold_id==13)
+hotels_val13 = hotels_val13 %>%
+ mutate(test = predict(glm_val, hotels_val13),
+        count = sum(test),
+        truecount = sum(children),
+        difference = count - truecount)
+
+
+hotels_val14 = hotels_val %>%
+ filter(fold_id==14)
+hotels_val14 = hotels_val14 %>%
+ mutate(test = predict(glm_val, hotels_val14),
+        count = sum(test),
+        truecount = sum(children),
+        difference = count - truecount)
+
+
+hotels_val15 = hotels_val %>%
+ filter(fold_id==15)
+hotels_val15 = hotels_val15 %>%
+ mutate(test = predict(glm_val, hotels_val15),
+        count = sum(test),
+        truecount = sum(children),
+        difference = count - truecount)
+
+
+hotels_val16 = hotels_val %>%
+ filter(fold_id==16)
+hotels_val16 = hotels_val16 %>%
+ mutate(test = predict(glm_val, hotels_val16),
+        count = sum(test),
+        truecount = sum(children),
+        difference = count - truecount)
+
+
+hotels_val17 = hotels_val %>%
+ filter(fold_id==17)
+hotels_val17 = hotels_val17 %>%
+ mutate(test = predict(glm_val, hotels_val17),
+        count = sum(test),
+        truecount = sum(children),
+        difference = count - truecount)
+
+
+hotels_val18 = hotels_val %>%
+ filter(fold_id==18)
+hotels_val18 = hotels_val18 %>%
+ mutate(test = predict(glm_val, hotels_val18),
+        count = sum(test),
+        truecount = sum(children),
+        difference = count - truecount)
+
+hotels_val19 = hotels_val %>%
+ filter(fold_id==19)
+hotels_val19 = hotels_val19 %>%
+ mutate(test = predict(glm_val, hotels_val19),
+        count = sum(test),
+        truecount = sum(children),
+        difference = count - truecount)
+
+
+hotels_val20 = hotels_val %>%
+ filter(fold_id==20)
+hotels_val20 = hotels_val20 %>%
+ mutate(test = predict(glm_val, hotels_val20),
+        count = sum(test),
+        truecount = sum(children),
+        difference = count - truecount)
+
+
+
+
+difference0 = c(-3.628541, 3.51304, -5.747051, -9.177692, -0.6367764, -14.07918, 3.887307, 1.075519, 1.327449, 0.2975673, -3.555963, -1.221419, 7.456818, 1.327184, 5.059975, 1.923811, 1.160539, 6.674413, 2.110626, 2.232372)
+mean0 = mean(difference0)
+
+```
+
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+difference0 
+mean0
+
+```
+
+
+
+We can notice from the data above that we are very close in predicting whether a reservation has a child or not based on our 3rd model. Based on the Cross validation, the worst prediction was less than the true value by 14 reservations, and the best one matches the true data.
+

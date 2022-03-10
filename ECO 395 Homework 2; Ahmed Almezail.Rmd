@@ -192,8 +192,8 @@ Based on the RMSE results of the training data, my model outperformed the one in
 
 
 
-Xtrain = model.matrix(~ age + livingArea  + bedrooms + bathrooms - 1, data=saratoga_train) 
-Xtest = model.matrix(~ age + livingArea + bedrooms + bathrooms - 1, data=saratoga_test)
+Xtrain = model.matrix(~ age + livingArea  + bedrooms + bathrooms + landValue - 1, data=saratoga_train) 
+Xtest = model.matrix(~ age + livingArea  + bedrooms + bathrooms + landValue - 1, data=saratoga_test)
 
 # training and testing set responses
 ytrain = saratoga_train$price 
@@ -211,30 +211,17 @@ Xtilde_train=data.frame(Xtilde_train)%>%
 
 
 rmse_saratoga=foreach(i=1:100, .combine='c') %do% {
-  knn_model_saratoga= knnreg(price ~  age +  livingArea + bedrooms + bathrooms - 1,
+  knn_model_saratoga= knnreg(price ~  age +  livingArea + bedrooms + bathrooms + landValue - 1,
                              data=Xtilde_train, k=i)
-  modelr::rmse(knn_model_saratoga,Xtilde_test)
+ knn_best = modelr::rmse(knn_model_saratoga,Xtilde_test)
 } 
 
 
 
-plot(rmse_saratoga) +
-
-
-min(rmse_saratoga)
-
-Best_KNN = 27
-
-
-knn_best = knnreg(price ~  age +  livingArea + bedrooms + bathrooms - 1, k=27, data = SaratogaHouses)
-
-
-
+plot(rmse_saratoga)
 
 
 ```
-
-The KNN model with K=27 is the best prediction model among the 3 models based on the RMSE test.
 
 
 
@@ -243,7 +230,7 @@ The KNN model with K=27 is the best prediction model among the 3 models based on
 
 rmse1_tax = rmse(lm_class, saratoga_test)
 rmse2_tax = rmse(lm_me, saratoga_test)
-rmse3_tax = rmse(knn_best, saratoga_test)
+rmse3_tax = knn_best
 
 
 models_tax_summary = data.frame(
@@ -256,25 +243,9 @@ models_tax_summary
 ```
 
 
-Based on the testing data, the KNN model outperformed the other two, but in terms of training data, the 2nd model has the lowest RMSE.
+Based on the testing data, my linear model outperformed the other two since it has the lowest rmse value based on the testing set.
 
 
-
-Now let us put all three predicate models in one table with the true price.
-
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
-
-# add predictions to data frame
-SaratogaHouses1  = saratoga_test %>%
-  mutate(price_predKNN = predict(knn_best, saratoga_test)) %>%
-  mutate(price_predlm_me = predict(lm_me, saratoga_test))
-
-pricing_models = SaratogaHouses1 %>%
-  select(price, price_predKNN, price_predlm_me)
-
-head(pricing_models)
-
-```
 
 
 
@@ -282,20 +253,21 @@ head(pricing_models)
 
 ### Tax Report Price Predictions
 
-Based on our analysis, we recommend to use the KNN model predictions since it has the lowest RMSE. In this model we emphasize on the most effective factors on property prices. We observe that prices depend more on these factors:-
+Based on our analysis, we recommend to use my linear model predictions since it has the lowest RMSE. In this model we emphasize on the most effective factors on property prices. We observe that prices depend more on these factors:-
 
 1- age of the property
 2- living area in square feet
 3- number of bedrooms
 4- number of bathrooms
+5- heating systems
+6- lot size
 
-So, we can predict the price of a property house if we know only these 4 data. We believe these factors have a good price estimation power. Adding the other factors might affect our predictive power for the model. 
+and we believe all these variables depend on the land value, so we took that under consideration. We came up with this model since the first variables are the most common factors on pricing strategy, and we considers the heating systems since it gets very cold in winter in New York. The lot size is another variable that we think will add more predictive power to our model. However, we thought about how the land value would play crucial role in pricing, so we included that too in our predictive model in a how each effect of those 6 variables would change depending on the value of the property land.
 
-However, this model have small difference in terms of prediction power from the best linear model (lm_me). So, we have included that model as well in the table to have more than one benchmark to the tax authority against the real prices.
+So, we can predict the price of a property house if we know only these data. We believe these factors have a good price estimation power. Adding the other factors might affect our predictive power for the model. However, it is very important to mention that our model have an average deviation from the market price by $57,763.44. So you might take that under consideration when taxing the property owners. 
 
-The price prediction strategy for the 2nd model includes more variable from the data. So, we used the same variables in the KNN model but adding lot size and type of heating systems to the model. In addition, the model considers how all these variables depend on the land value of the property which would able us to distingiush the land value since it is an important factor to the authority. In short, we recommend both of these models to use with a little more favor to the KNN model.
 
-So, your organization could use these data to know whether the market price is overvalued or undervalued, and use all these information to create the best pricing estimation for taxing purposes.
+So, your tax authority could use these data to know whether the market price is overvalued or undervalued, and use all these information to create the best pricing estimation for taxing purposes.
 
 
 

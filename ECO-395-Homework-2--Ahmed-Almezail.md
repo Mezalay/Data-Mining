@@ -171,57 +171,40 @@ the one in the class.
 
 ![](ECO-395-Homework-2--Ahmed-Almezail_files/figure-markdown_strict/unnamed-chunk-9-1.png)
 
-    ## numeric(0)
-
-The KNN model with K=27 is the best prediction model among the 3 models
-based on the RMSE test.
-
     ##   Model1_tax_rmse Model2_tax_rmse model3_tax_rmse
-    ## 1        64464.31        57763.44        64625.93
+    ## 1        64464.31        57763.44        61158.48
 
-Based on the testing data, the KNN model outperformed the other two, but
-in terms of training data, the 2nd model has the lowest RMSE.
-
-Now let us put all three predicate models in one table with the true
-price.
-
-    ##     price price_predKNN price_predlm_me
-    ## 4  155000      226315.4        209022.2
-    ## 9   90000      179690.7        176505.9
-    ## 12 120000      193064.6        196502.2
-    ## 15 127000      178853.6        129030.2
-    ## 20  87500      159384.8        133566.9
-    ## 22 104900      174268.7        163100.6
+Based on the testing data, my linear model outperformed the other two
+since it has the lowest rmse value based on the testing set.
 
 ### Tax Report Price Predictions
 
-Based on our analysis, we recommend to use the KNN model predictions
+Based on our analysis, we recommend to use my linear model predictions
 since it has the lowest RMSE. In this model we emphasize on the most
 effective factors on property prices. We observe that prices depend more
 on these factors:-
 
 1- age of the property 2- living area in square feet 3- number of
-bedrooms 4- number of bathrooms
+bedrooms 4- number of bathrooms 5- heating systems 6- lot size
 
-So, we can predict the price of a property house if we know only these 4
+and we believe all these variables depend on the land value, so we took
+that under consideration. We came up with this model since the first
+variables are the most common factors on pricing strategy, and we
+considers the heating systems since it gets very cold in winter in New
+York. The lot size is another variable that we think will add more
+predictive power to our model. However, we thought about how the land
+value would play crucial role in pricing, so we included that too in our
+predictive model in a how each effect of those 6 variables would change
+depending on the value of the property land.
+
+So, we can predict the price of a property house if we know only these
 data. We believe these factors have a good price estimation power.
 Adding the other factors might affect our predictive power for the
-model.
+model. However, it is very important to mention that our model have an
+average deviation from the market price by $57,763.44. So you might take
+that under consideration when taxing the property owners.
 
-However, this model have small difference in terms of prediction power
-from the best linear model (lm\_me). So, we have included that model as
-well in the table to have more than one benchmark to the tax authority
-against the real prices.
-
-The price prediction strategy for the 2nd model includes more variable
-from the data. So, we used the same variables in the KNN model but
-adding lot size and type of heating systems to the model. In addition,
-the model considers how all these variables depend on the land value of
-the property which would able us to distingiush the land value since it
-is an important factor to the authority. In short, we recommend both of
-these models to use with a little more favor to the KNN model.
-
-So, your organization could use these data to know whether the market
+So, your tax authority could use these data to know whether the market
 price is overvalued or undervalued, and use all these information to
 create the best pricing estimation for taxing purposes.
 
@@ -232,7 +215,7 @@ create the best pricing estimation for taxing purposes.
     ##       0   36  421      243
     ##       1   53  197       50
 
-![](ECO-395-Homework-2--Ahmed-Almezail_files/figure-markdown_strict/unnamed-chunk-13-1.png)
+![](ECO-395-Homework-2--Ahmed-Almezail_files/figure-markdown_strict/unnamed-chunk-12-1.png)
 
     ##         (Intercept)            duration              amount         installment 
     ##               -0.71                0.03                0.00                0.22 
@@ -243,7 +226,7 @@ create the best pricing estimation for taxing purposes.
 
     ## data frame with 0 columns and 0 rows
 
-![](ECO-395-Homework-2--Ahmed-Almezail_files/figure-markdown_strict/unnamed-chunk-14-1.png)
+![](ECO-395-Homework-2--Ahmed-Almezail_files/figure-markdown_strict/unnamed-chunk-13-1.png)
 
 The model suggests that clients with good credit history have higher
 probability of a loan default than an average client with terrible or
@@ -449,14 +432,14 @@ implies good fitting and reliable prediction power.
 
 ### Model validation Step 1
 
-![](ECO-395-Homework-2--Ahmed-Almezail_files/figure-markdown_strict/unnamed-chunk-18-1.png)
+![](ECO-395-Homework-2--Ahmed-Almezail_files/figure-markdown_strict/unnamed-chunk-17-1.png)
 
 Based on the ROC curve, the best value would be the furthest value in
 the northwest.
 
 ### Model validation Step 2
 
-![](ECO-395-Homework-2--Ahmed-Almezail_files/figure-markdown_strict/unnamed-chunk-19-1.png)
+![](ECO-395-Homework-2--Ahmed-Almezail_files/figure-markdown_strict/unnamed-chunk-18-1.png)
 
     ##    seq             variable    value children_probability
     ## 1    1 children_predictions 20.26421           0.08105685

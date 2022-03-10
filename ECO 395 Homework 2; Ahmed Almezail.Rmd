@@ -3,7 +3,7 @@ title: "ECO 935 Homework 2: Ahmed Almezail"
 output: md_document
 ---
 
-Q1
+##Problem 1: visualization
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE, results='hide'}
 library(tidyverse)
@@ -22,6 +22,7 @@ library(gamlr)
 library(knitr)
 library(parallel)
 library(ROCR)
+library(reshape2)
 
 ```
 
@@ -71,7 +72,13 @@ ggplot(Avg_capmetro_UT) +
  That's simply because of the Thanksgiving Holiday which there are no classes as well on those days. 
  Those holidays affect the average lines and makes it lower than its peers.") +
  theme_minimal() +
- facet_wrap(vars(day_of_week))
+ facet_wrap(vars(day_of_week)) +
+    theme(plot.caption = element_text(hjust = 0.5, face= "italic"),
+        plot.title = element_text(hjust=0.5), 
+        plot.subtitle =element_text(hjust=0.5))
+
+
+
 
 
 ```
@@ -82,6 +89,26 @@ ggplot(Avg_capmetro_UT) +
 
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+
+hours = c(
+  `6` = "6:00 AM",
+  `7` = "7:00 AM",
+  `8` = "8:00 AM",
+  `9` = "9:00 AM",
+  `10` = "10:00 AM",
+  `11` = "11:00 AM",
+  `12` = "12:00 PM",
+  `13` = "1:00 PM",
+  `14` = "2:00 PM",
+  `15` = "3:00 PM",
+  `16` = "4:00 PM",
+  `17` = "5:00 PM",
+  `18` = "6:00 PM",
+  `19` = "7:00 PM",
+  `20` = "8:00 PM",
+  `21` = "9:00 PM"
+)
 
 ggplot(capmetro_UT) +
  aes(x = temperature, y = boarding, colour = weekend, group = month) +
@@ -95,7 +122,10 @@ ggplot(capmetro_UT) +
  In the peak hours we could notice a small effect based on the graphs showing that students tend to 
  use the bus more often when temperature is increasing.") +
  theme_minimal() +
- facet_wrap(vars(hour_of_day))
+ facet_wrap(vars(hour_of_day), labeller = as_labeller(hours)) +  
+  theme(plot.caption = element_text(hjust = 0.5, face= "italic"),
+        plot.title = element_text(hjust=0.5), 
+        plot.subtitle =element_text(hjust=0.5))
 
 ```
 
@@ -103,9 +133,9 @@ ggplot(capmetro_UT) +
 
 
 
-Q2
+##Problem 2: Saratoga house prices
 
-Lets have a look to the data
+Let's have a look into the data...
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 data(SaratogaHouses)
@@ -113,39 +143,47 @@ glimpse(SaratogaHouses)
 
 ```
 
-Now we want to comare a better model than the one in the class
+###Now we want to build a better model than the one in the class.
 
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
+```{r}
 
-# Split into training and testing sets
-saratoga_split = initial_split(SaratogaHouses, prop = 0.8)
-saratoga_train = training(saratoga_split)
-saratoga_test = testing(saratoga_split)
+set.seed(430)
+saratoga_split = createDataPartition(SaratogaHouses$price, p = 0.75, list = FALSE)
+saratoga_train = SaratogaHouses[saratoga_split, ]
+saratoga_test = SaratogaHouses[-saratoga_split, ]
 
-lm_class = lm(price ~ . - pctCollege - sewer - waterfront - landValue - newConstruction, data=saratoga_train)
+lm_class = train(
+  price ~ . - pctCollege - sewer - waterfront - landValue - newConstruction, data=saratoga_train,
+  method = "lm", 
+  trControl = trainControl(method = "cv", 
+               number = 10, verboseIter = TRUE ))
 
 
-lm_me = lm(price ~ (. - rooms -centralAir - fuel - fireplaces- pctCollege - sewer - waterfront - landValue - newConstruction)*(landValue), data=saratoga_train)
+lm_me = train(
+  price ~ . *(landValue) - (rooms -centralAir - fuel - fireplaces- pctCollege - sewer - waterfront - landValue - newConstruction), data=saratoga_train,
+  method = "lm", 
+  trControl = trainControl(method = "cv", 
+               number = 10, verboseIter = TRUE ))
 
 
-coef(lm_class) %>% round(0)
-coef(lm_me) %>% round(0)
 
-# Predictions out of sample
-# Root mean squared error
+lm_class$finalModel
+lm_me$finalModel
 
-rmse(lm_class, saratoga_test)
-rmse(lm_me, saratoga_test)
+lm_class$results
+lm_me$results
+
 
 
 
 ```
 
-This model have better RMSE than the one in the class.
+
+Based on the RMSE results of the training data, my model outperformed the one in the class.
 
 
-Now lets use KNN model...
+###Now lets use KNN model...
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 
@@ -154,15 +192,7 @@ Now lets use KNN model...
 
 
 
-
-
-saratoga_split = initial_split(SaratogaHouses, prop = 0.8) 
-saratoga_train = training(saratoga_split)
-saratoga_test = testing(saratoga_split)
-# construct the training and test-set feature matrices
-# note the "-1": this says "don't add a column of ones for the intercept" 
-
-Xtrain = model.matrix(~ age + livingArea  + bedrooms + bathrooms- 1, data=saratoga_train) 
+Xtrain = model.matrix(~ age + livingArea  + bedrooms + bathrooms - 1, data=saratoga_train) 
 Xtest = model.matrix(~ age + livingArea + bedrooms + bathrooms - 1, data=saratoga_test)
 
 # training and testing set responses
@@ -174,63 +204,83 @@ ytest = saratoga_test$price
 scale_train = apply(Xtrain, 2, sd) # calculate std dev for each column 
 Xtilde_train = scale(Xtrain, scale = scale_train)
 Xtilde_test = scale(Xtest, scale = scale_train) # use the training set scales!
+Xtilde_test=data.frame(Xtilde_test)%>%
+  mutate(price=c(ytest))
+Xtilde_train=data.frame(Xtilde_train)%>%
+  mutate(price=c(ytrain))
+
+
+rmse_saratoga=foreach(i=1:100, .combine='c') %do% {
+  knn_model_saratoga= knnreg(price ~  age +  livingArea + bedrooms + bathrooms - 1,
+                             data=Xtilde_train, k=i)
+  modelr::rmse(knn_model_saratoga,Xtilde_test)
+} 
 
 
 
-# K-fold cross validation
-K_folds = 5
-saratoga_folds = crossv_kfold(SaratogaHouses, k=K_folds)
-# create a grid of K values -- the precise grid isn't important as long # as you cover a wide range
-k_grid = seq(2, 100, by=2)
-# For each value of k, map the model-fitting function over the folds # Using the same folds is important, otherwise we're not comparing
-# models across the same train/test splits
-cv_grid = foreach(k = k_grid, .combine='rbind') %do% {
-  models = map(saratoga_folds$train, ~ knnreg(price ~  age +  livingArea + bedrooms + bathrooms - 1, k=k, data = ., use.all=FALSE))
-  errs = map2_dbl(models, saratoga_folds$test, modelr::rmse)
-  c(k=k, err = mean(errs), std_err = sd(errs)/sqrt(K_folds))
-  } %>% as.data.frame
-# plot means and std errors versus k
-ggplot(cv_grid) +
-  geom_point(aes(x=k, y=err)) +
-  geom_errorbar(aes(x=k, ymin = err-std_err, ymax = err+std_err)) +
-  labs(y="RMSE", title="RMSE vs k for KNN regression: Saratoga, NY")
+plot(rmse_saratoga) +
 
-min(errs)
 
-```
+min(rmse_saratoga)
+
+Best_KNN = 27
+
+
+knn_best = knnreg(price ~  age +  livingArea + bedrooms + bathrooms - 1, k=27, data = SaratogaHouses)
 
 
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE}
-
-
-# fit at optimal k to show predicts on full data set
-k_best = k_grid[which.min(cv_grid$err)]
-knn_best = knnreg(price ~  age +  livingArea + bedrooms + bathrooms - 1, k=k_best, data = SaratogaHouses)
 
 
 ```
 
+The KNN model with K=27 is the best prediction model among the 3 models based on the RMSE test.
 
-Let us put all three predicate models in one table with the true price.
 
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+
+rmse1_tax = rmse(lm_class, saratoga_test)
+rmse2_tax = rmse(lm_me, saratoga_test)
+rmse3_tax = rmse(knn_best, saratoga_test)
+
+
+models_tax_summary = data.frame(
+Model1_tax_rmse = rmse1_tax,
+Model2_tax_rmse = rmse2_tax,
+model3_tax_rmse = rmse3_tax)
+
+models_tax_summary
+
+```
+
+
+Based on the testing data, the KNN model outperformed the other two, but in terms of training data, the 2nd model has the lowest RMSE.
+
+
+
+Now let us put all three predicate models in one table with the true price.
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 
 # add predictions to data frame
-SaratogaHouses  = SaratogaHouses %>%
-  mutate(price_predKNN = predict(knn_best, SaratogaHouses)) %>%
-  mutate(price_predlm_me = predict(lm_me, SaratogaHouses)) %>%
-   mutate(price_predlm_class = predict(lm_class, SaratogaHouses)) 
+SaratogaHouses1  = saratoga_test %>%
+  mutate(price_predKNN = predict(knn_best, saratoga_test)) %>%
+  mutate(price_predlm_me = predict(lm_me, saratoga_test))
 
-pricing_models = SaratogaHouses %>%
-  select(price, price_predlm_class, price_predlm_me, price_predKNN )
+pricing_models = SaratogaHouses1 %>%
+  select(price, price_predKNN, price_predlm_me)
 
 head(pricing_models)
 
 ```
 
-##Tax Report Price Predictions
+
+
+
+
+###Tax Report Price Predictions
 
 Based on our analysis, we recommend to use the KNN model predictions since it has the lowest RMSE. In this model we emphasize on the most effective factors on property prices. We observe that prices depend more on these factors:-
 
@@ -239,14 +289,20 @@ Based on our analysis, we recommend to use the KNN model predictions since it ha
 3- number of bedrooms
 4- number of bathrooms
 
-So we can predict the price of a property house if we know only these 4 information. We believe these factors have the most predictive power in a predictive model. Adding the other factors might affect our accuracy for the model. However, the model has some noticeable difference with the market price, which might be unfair to tax property owners based on it. However, it might give a good indication to the tax authority to have another pricing index as a benchmark against the market value.
+So, we can predict the price of a property house if we know only these 4 data. We believe these factors have a good price estimation power. Adding the other factors might affect our predictive power for the model. 
 
-So I also provided you with another predictive model that includes more factors such as type of heating system, size of lot, and making all the factors depend on the land value specifically. This way we can emphasize on the land value which what a tax authority value the most. So we can predict the pricing based on this 2nd predictive model, but we are in favor of the one called KNN since it shows lower difference between the preidcted price and the market value on average.
+However, this model have small difference in terms of prediction power from the best linear model (lm_me). So, we have included that model as well in the table to have more than one benchmark to the tax authority against the real prices.
+
+The price prediction strategy for the 2nd model includes more variable from the data. So, we used the same variables in the KNN model but adding lot size and type of heating systems to the model. In addition, the model considers how all these variables depend on the land value of the property which would able us to distingiush the land value since it is an important factor to the authority. In short, we recommend both of these models to use with a little more favor to the KNN model.
+
+So, your organization could use these data to know whether the market price is overvalued or undervalued, and use all these information to create the best pricing estimation for taxing purposes.
 
 
 
 
-Q3
+
+
+##Problem 3: Classification and retrospective sampling
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 
@@ -330,7 +386,7 @@ In short, just improve the methodology of case design in order to have unbiased 
 
 
 
-Q3
+##Problem 4: Children and hotel reservations
 
 
 
@@ -341,305 +397,185 @@ hotels_val = read.csv('../data/hotels_val.csv')
 
 ```
 
-
+### Model building
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE}
 
 # Split into training and testing sets
-hotels_dev_split = initial_split(hotels_dev, prop = 0.8)
-hotels_dev_train = training(hotels_dev_split)
-hotels_dev_test = testing(hotels_dev_split)
 
-
-#Model 1
-
-logit_dev1 = glm(children ~ market_segment + adults + customer_type + is_repeated_guest -1, data=hotels_dev_train, family='binomial')
-logit_dev1_pred = predict(logit_dev1, hotels_dev_test, type ='response')
+set.seed(10)
+hotels_dev_split = createDataPartition(hotels_dev$children, p = 0.75, list = FALSE)
+hotels_dev_train = hotels_dev[hotels_dev_split, ]
+hotels_dev_test = hotels_dev[-hotels_dev_split, ]
 
 
 
-#Model 2
+logit_dev1 = train(
+ children ~ market_segment + adults + customer_type + is_repeated_guest -1, data=hotels_dev_train,
+  method = "glm", 
+  trControl = trainControl(method = "cv", 
+               number = 20), 
+               family = "binomial")
 
-logit_dev2 = glm(children ~ . - arrival_date -1, data=hotels_dev_train)
-logit_dev2_pred = predict(logit_dev2, hotels_dev_test, type ='response')
+logit_dev2 = train(
+ children ~ . - arrival_date -1, data=hotels_dev_train,
+  method = "glm", 
+  trControl = trainControl(method = "cv", 
+               number = 20), 
+               family = "binomial")
+
+logit_dev3 = train(
+children ~ . - arrival_date + average_daily_rate*adults -1 , data=hotels_dev_train,
+  method = "glm", 
+  trControl = trainControl(method = "cv", 
+               number = 20), 
+               family = "binomial") 
+
+
+logit_dev1$finalModel
+logit_dev2$finalModel
+logit_dev3$finalModel
+
+logit_dev1$results
+logit_dev2$results
+logit_dev3$results
 
 
 
-# Model 3
 
-glm_dev3 = glm(children ~ . -arrival_date - days_in_waiting_list - required_car_parking_spaces + average_daily_rate:total_of_special_requests + is_repeated_guest:total_of_special_requests + is_repeated_guest:average_daily_rate -1, data = hotels_dev_train)
 
-glm_dev3_pred = predict(glm_dev3, hotels_dev_test, type ='response')
 
 ```
 
+
+Based on the AIC and the RMSE, the third model is the best fitting model among all the three.
 
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 
 
-rmse(logit_dev1, hotels_dev_test)
-rmse(logit_dev2, hotels_dev_test)
-rmse(glm_dev3, hotels_dev_test)
-length(coef(logit_dev1))
-length(coef(logit_dev2))
-length(coef(glm_dev3))
+rmse1 = rmse(logit_dev1, hotels_dev_test)
+rmse2 = rmse(logit_dev2, hotels_dev_test)
+rmse3 = rmse(logit_dev3, hotels_dev_test)
+
+
+models_summary = data.frame(
+Model1_rmse = rmse1,
+Model2_rmse = rmse2,
+model3_rmse = rmse3)
+
+models_summary
+
 ```
 
+Based on the results of the models, the 3rd model outperformed the other 2 other models, and have better rmse than the training data which implies good fitting and reliable prediction power.
 
 
-## Model validation Step 1
+
+### Model validation Step 1
 
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 
-glm_val = glm(children ~ (. -arrival_date - days_in_waiting_list - required_car_parking_spaces + average_daily_rate:total_of_special_requests + is_repeated_guest:total_of_special_requests + is_repeated_guest:average_daily_rate -1), data=hotels_val)
 
 
-glm_val_test = predict(glm_dev3, hotels_val)
-maybe_test = ifelse(glm_val_test > 0.5, 1, 0)
-confusion = table(children = hotels_val$children, pred_children = maybe_test)
-confusion
+
+glm_val = glm(children ~ . - arrival_date + average_daily_rate*adults -1, data=hotels_val)
 
 
 
 
-sum(diag(confusion))/sum(confusion)
-```
+
+
+glm_val_pred = predict(glm_val, hotels_val)
+  
+
+val_pred_test1 = ifelse(glm_val_pred > 0.5, 1, 0)
+val_pred_test2 = ifelse(glm_val_pred > 0.8, 1, 0)
+
+confusion1 = table(children = hotels_val$children, pred_children = val_pred_test1)
+confusion2 = table(children = hotels_val$children, pred_children = val_pred_test2)
 
 
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
 
-pred = predict(glm_val, hotels_val, type = "response")
-
-
-roc_pred = prediction(predictions = pred  , labels = hotels_val$children)
+roc_pred = prediction(predictions = glm_val_pred  , labels = hotels_val$children)
 roc_perform = performance(roc_pred , "tpr" , "fpr")
-```
-
-
-
-```{r echo=FALSE, message=FALSE, warning=FALSE}
 plot(roc_perform)
-```
 
 
-
-
-
-
-
-## Model validation Step 2
-```{r echo=FALSE, message=FALSE, warning=FALSE}
-
-
-
-K_folds = 20
-hotels_val_folds = crossv_kfold(hotels_val, k=K_folds)
-
-
-hotels_val = hotels_val %>%
- mutate(fold_id = rep(1:K_folds, length=nrow(hotels_val)) %>% sample)
-
-
-
-
-hotels_val1 = hotels_val %>%
- filter(fold_id==1)
-hotels_val1 = hotels_val1 %>%
- mutate(test = predict(glm_val, hotels_val1),
-        count = sum(test),
-        truecount = sum(children),
-        difference = count - truecount)
-
-
-hotels_val2 = hotels_val %>%
- filter(fold_id==2)
-hotels_val2 = hotels_val2 %>%
- mutate(test = predict(glm_val, hotels_val2),
-        count = sum(test),
-        truecount = sum(children),
-        difference = count - truecount)
-
-
-hotels_val3 = hotels_val %>%
- filter(fold_id==3)
-hotels_val3 = hotels_val3 %>%
- mutate(test = predict(glm_val, hotels_val3),
-        count = sum(test),
-        truecount = sum(children),
-        difference = count - truecount)
-
-
-hotels_val4 = hotels_val %>%
- filter(fold_id==4)
-hotels_val4 = hotels_val4 %>%
- mutate(test = predict(glm_val, hotels_val4),
-        count = sum(test),
-        truecount = sum(children),
-        difference = count - truecount)
-
-
-hotels_val5 = hotels_val %>%
- filter(fold_id==5)
-hotels_val5 = hotels_val5 %>%
- mutate(test = predict(glm_val, hotels_val5),
-        count = sum(test),
-        truecount = sum(children),
-        difference = count - truecount)
-
-
-hotels_val6 = hotels_val %>%
- filter(fold_id==6)
-hotels_val6 = hotels_val6 %>%
- mutate(test = predict(glm_val, hotels_val6),
-        count = sum(test),
-        truecount = sum(children),
-        difference = count - truecount)
-
-
-hotels_val7 = hotels_val %>%
- filter(fold_id==7)
-hotels_val7 = hotels_val7 %>%
- mutate(test = predict(glm_val, hotels_val7),
-        count = sum(test),
-        truecount = sum(children),
-        difference = count - truecount)
-
-
-hotels_val8 = hotels_val %>%
- filter(fold_id==8)
-hotels_val8 = hotels_val8 %>%
- mutate(test = predict(glm_val, hotels_val8),
-        count = sum(test),
-        truecount = sum(children),
-        difference = count - truecount)
-
-
-hotels_val9 = hotels_val %>%
- filter(fold_id==9)
-hotels_val9 = hotels_val9 %>%
- mutate(test = predict(glm_val, hotels_val9),
-        count = sum(test),
-        truecount = sum(children),
-        difference = count - truecount)
-
-
-hotels_val10 = hotels_val %>%
- filter(fold_id==10)
-hotels_val10 = hotels_val10 %>%
- mutate(test = predict(glm_val, hotels_val10),
-        count = sum(test),
-        truecount = sum(children),
-        difference = count - truecount)
-
-
-hotels_val11 = hotels_val %>%
- filter(fold_id==11)
-hotels_val11 = hotels_val11 %>%
- mutate(test = predict(glm_val, hotels_val11),
-        count = sum(test),
-        truecount = sum(children),
-        difference = count - truecount)
-
-
-hotels_val12 = hotels_val %>%
- filter(fold_id==12)
-hotels_val12 = hotels_val12 %>%
- mutate(test = predict(glm_val, hotels_val12),
-        count = sum(test),
-        truecount = sum(children),
-        difference = count - truecount)
-
-
-hotels_val13 = hotels_val %>%
- filter(fold_id==13)
-hotels_val13 = hotels_val13 %>%
- mutate(test = predict(glm_val, hotels_val13),
-        count = sum(test),
-        truecount = sum(children),
-        difference = count - truecount)
-
-
-hotels_val14 = hotels_val %>%
- filter(fold_id==14)
-hotels_val14 = hotels_val14 %>%
- mutate(test = predict(glm_val, hotels_val14),
-        count = sum(test),
-        truecount = sum(children),
-        difference = count - truecount)
-
-
-hotels_val15 = hotels_val %>%
- filter(fold_id==15)
-hotels_val15 = hotels_val15 %>%
- mutate(test = predict(glm_val, hotels_val15),
-        count = sum(test),
-        truecount = sum(children),
-        difference = count - truecount)
-
-
-hotels_val16 = hotels_val %>%
- filter(fold_id==16)
-hotels_val16 = hotels_val16 %>%
- mutate(test = predict(glm_val, hotels_val16),
-        count = sum(test),
-        truecount = sum(children),
-        difference = count - truecount)
-
-
-hotels_val17 = hotels_val %>%
- filter(fold_id==17)
-hotels_val17 = hotels_val17 %>%
- mutate(test = predict(glm_val, hotels_val17),
-        count = sum(test),
-        truecount = sum(children),
-        difference = count - truecount)
-
-
-hotels_val18 = hotels_val %>%
- filter(fold_id==18)
-hotels_val18 = hotels_val18 %>%
- mutate(test = predict(glm_val, hotels_val18),
-        count = sum(test),
-        truecount = sum(children),
-        difference = count - truecount)
-
-hotels_val19 = hotels_val %>%
- filter(fold_id==19)
-hotels_val19 = hotels_val19 %>%
- mutate(test = predict(glm_val, hotels_val19),
-        count = sum(test),
-        truecount = sum(children),
-        difference = count - truecount)
-
-
-hotels_val20 = hotels_val %>%
- filter(fold_id==20)
-hotels_val20 = hotels_val20 %>%
- mutate(test = predict(glm_val, hotels_val20),
-        count = sum(test),
-        truecount = sum(children),
-        difference = count - truecount)
-
-
-
-
-difference0 = c(-3.628541, 3.51304, -5.747051, -9.177692, -0.6367764, -14.07918, 3.887307, 1.075519, 1.327449, 0.2975673, -3.555963, -1.221419, 7.456818, 1.327184, 5.059975, 1.923811, 1.160539, 6.674413, 2.110626, 2.232372)
-mean0 = mean(difference0)
 
 ```
 
+Based on the ROC curve, the best value would be the furthest value in the northwest.
 
 
-```{r echo=FALSE, message=FALSE, warning=FALSE}
-difference0 
-mean0
+### Model validation Step 2
+
+
+
+```{r echo=FALSE, error=FALSE, message=FALSE, warning =FALSE}
+
+# allocate to folds
+
+n = nrow(hotels_val)
+K = 20
+fold_id = rep_len(1:K, n)  # repeats 1:K over and over again
+fold_id = sample(fold_id, replace=FALSE) # permute the order randomly
+hotels_val_fold = cbind(hotels_val, fold_id)
+
+children_predictions = c()
+children_real = c()
+seq = seq(1:20)
+
+for(i in 1:K) {
+hotels_val_fold_i = hotels_val_fold %>% 
+  filter(fold_id == i)
+val_model_pred = predict(glm_val, newdata = hotels_val_fold_i)
+children_pred_fold = sum(val_model_pred)
+children_predictions = c(children_predictions, children_pred_fold)
+children_fold = sum(hotels_val_fold_i$children)
+children_real = c(children_real, children_fold)
+}
+
+error_sq = (children_real - children_predictions)^2
+rmse_final = sqrt(sum(error_sq)/20)
+fold_performance = data.frame(cbind(seq, children_predictions, children_real))
+
+
+fold_performance_mtx <- melt(fold_performance[,c('seq','children_predictions','children_real')],id.vars = 1)
+
+ggplot(fold_performance_mtx,aes(x = seq,y = value)) + 
+    geom_bar(aes(fill = variable),stat = "identity",position = "dodge") + 
+    scale_y_log10() +
+ labs(title= "Number of Children per fold", subtitle = "True number  vs Predicted number", ) +
+  theme_minimal()
+
+fold_performance_mtx_p = fold_performance_mtx %>%
+  mutate(fold_performance_mtx, children_probability = value/250)
+
+df =aggregate(fold_performance_mtx_p$children_probability, list(fold_performance_mtx_p$variable), FUN=mean) %>%
+  data.frame()
+
+df <- setNames(df, c("Pred vs Real","Avg Prob"))
+
+fold_performance_mtx_p
+df
+
+models_val = data.frame(
+Model1_rmse = rmse1,
+Model2_rmse = rmse2,
+model3_rmse = rmse3,
+model_val_rmse = rmse_final)
+
+models_val
 
 ```
 
+This plot shows the predicted number of children per fold in red, and the true number of children per fold in blue. We can notice how the predictions deviates from the true value by an average of 3.4 children across all the folds. The rmse in the validation model is a bit higher than in the models built from the original data. It is expected since the model was not tailored based on the validation data, but it gave us quite good estimation.
+
+Furthermore, the true and predicted number of children have the same probability of a booking that have a kid which it is equal to 8% probability. In conclustion, I believe this model have good predictive power, and could be relied on to estimate the number of children in a booking on a single busy weekend.
 
 
-We can notice from the data above that we are very close in predicting whether a reservation has a child or not based on our 3rd model. Based on the Cross validation, the worst prediction was less than the true value by 14 reservations, and the best one matches the true data.
+
 

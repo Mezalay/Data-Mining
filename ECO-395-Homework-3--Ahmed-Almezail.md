@@ -175,8 +175,8 @@ worth it to try to model using gradient boosting model with the same
 variables of the best performing random forest model.
 
 After trying different shrinkage rates, I have succeeded in
-over-performing the 2nd model by having rmse = 134 compared to the best
-random forest model which was 167. So, I decided to select the boosting
+over-performing the 2nd model by having rmse = 136 compared to the best
+random forest model which was 157. So, I decided to select the boosting
 model to answer the question of the how much green certification is
 going to affect my revenue assuming all other variables are constant.
 So, I predicted the average value for both certified and certified, and
@@ -207,7 +207,7 @@ set and regress medianHousevalue on all the variables to test for the
 importance of each variables afterward. Next, I did two other
 specification models with different variables based on the results of
 the variables importance. The third model has the lowest root mean
-squared error which equals to 47,989. In order to check for room of
+squared error which eauals to 47,998.16. In order to check for room of
 improvements, I run a gradient boosting model with many different
 shrinkage rates, but I could not have a lower rmse value than the
 selected random forest model.

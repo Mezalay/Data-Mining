@@ -21,7 +21,7 @@ Basically, it is because of endogeneity issue which means the police variable is
 
 
 **2- How were the researchers from UPenn able to isolate this effect? Briefly describe their approach and discuss their result in the “Table 2” below, from the researchers' paper.**
-![alt text for screen readers](../data/ex3table2.png)
+
 First, the researchers have used "Terror Alert" variable to replace the effect of raising the number of cops since it is an exogenous variable in the crime model which could solve the endogeneity issue. However, they have also assumed that "Terror Alert" might not be quite good proxy since the number of tourists might decrease when there is a high Terror Alert. In order to consider that, they have isolated the effect of metro ridership by including log(midday ridership) as a variable in the regression. So, the first column is the uncontrolled effect which says that, when Terror Alert elevated (cops in street increases), the number of daily crime rate is expected to decrease by 7.32. However, when they control for the metro ridership, they still expect a decline in the number of crimes by 6.1. As a result, raising the number of cops would decrease the number of crimes in DC.
 
 
@@ -33,7 +33,7 @@ They assumed that crime might decrease if the number of tourists decline as well
 
 **4- Below I am showing you "Table 4" from the researchers' paper. Just focus on the first column of the table. Can you describe the model being estimated here? What is the conclusion?**
 
-![alt text for screen readers](../data/ex3table4.png)
+
 
 
 In this table, the researchers included the district fixed effects in the regression by using District as an interaction variable with "High Alert" in order to control for the different pattern of crimes between the districts when "Terror Alert" elevates. They assumed that most of the cops would be in District 1 since The White House is there. So, when there is an order to the police to prioritize district 1, that might have an effect on the other districts. So, they controlled for this effect by saying, we want to estimate the partial effect of High Alert depending whether if it is in District 1 or else. 
@@ -135,7 +135,12 @@ plotcp(dengue_tree_train_prune)
 
 ```
 
-Now we use random forest model.
+
+
+**Now we use random forest model.**
+
+
+
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE, results='hide'}
 
@@ -150,9 +155,6 @@ yhat_test_dengue = predict(forest1, dengue_test)
 plot(yhat_test_dengue, dengue_test$total_cases)
 
 
-# performance as a function of iteration number
-plot(forest1)
-
 # a variable importance plot: how much SSE decreases from including each var
 varImpPlot(forest1)
 
@@ -162,7 +164,10 @@ varImpPlot(forest1)
 ```
 
 
-Finally we model by using Boosting alogorthim.
+
+
+
+**Finally we model by using gradient Boosting model with Gaussian and Poisson distributions.**
 
 
 
@@ -206,7 +211,7 @@ summary(boost1)
 
 
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE, results='hide'}
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 
 rmse_dengue_1 = modelr::rmse(dengue_tree_train_prune, dengue_test)
 rmse_dengue_2 = modelr::rmse(forest1, dengue_test)  # a lot lower!
@@ -227,6 +232,9 @@ models_dengue_summary
 Based on the out of sample RMSE, the Gaussian Booster model seems to have the best prediction power. 
 
 
+**Now we plot the partial dependence of 4 variables.**
+
+
 ```{r, echo=FALSE, message=FALSE, warning=FALSE, results='hide'}
 
 plot(boost1, 'specific_humidity')
@@ -239,6 +247,9 @@ plot(boost1, 'city')
 ```
 
 The graphs above show the partial dependence (marginal effects) of the chosen variables on total cases of dengue based on the Gaussian boosting model. I have included all 4 variables since all of them seems interesting, especially with the high difference between the two cities, and the Fall season with the other seasons.
+
+
+
 
 
 
@@ -286,18 +297,15 @@ greenbuildings1_split_test  = testing(greenbuildings1_split)
 ```
 
 
+So I used three random forest models, and one gradient boosting model to measure the efficiency of the predictions.
 
-```{r, echo=FALSE, message=FALSE, warning=FALSE, results='hide'}
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
 
 set.seed(488)
 forest_green = randomForest(revenue ~ . ,
                        data=greenbuildings1_split_train, na.action = na.exclude)
 
-# performance as a function of iteration number
-plot(forest_green)
-
-yhat_test_green = predict(forest_green, greenbuildings1_split_test)
-plot(yhat_test_green, greenbuildings1_split_test$revenue)
 
 
 # a variable importance plot: how much SSE decreases from including each var
@@ -342,22 +350,25 @@ models_green_summary
 
   yhat_green_gbm = predict(boost_green, greenbuildings1_split_test, n.trees=350)
 
-  
+
+```
+
+**Now we check for the partial dependence of green rating based on the boosting model (the optimal model).**
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+
   plot(boost_green, 'green_rating')
   
   p4 = pdp::partial(boost_green, pred.var = 'green_rating', n.trees=350)
 p4
 
-
-```
-```{r, echo=FALSE, message=FALSE, warning=FALSE, results='hide'}
-
-
-
 ```
 
 
-The goal of this excersie is predict the revenue per square foot per calender year of about 8,000 commercial rental properties across the US. In addition, some of those properties are green certified which means they got green certification from either LEED or Energystar. Another question we want to answer is whether being green certified will raise your revenue or not. Now let's move on the methodloly used to predict the revenue. 
+
+
+The goal of this exercise is predict the revenue per square foot per calender year of about 8,000 commercial rental properties across the US. In addition, some of those properties are green certified which means they got green certification from either LEED or Energystar. Another question we want to answer is whether being green certified will raise your revenue or not. Now let's move on the methodloly used to predict the revenue. 
 
 First of all, I have mutated a new column to calculate the revenue per square foot per calender year based on the original data. In order to do that, I took the product of rent and leasing_rate. We need to do that to get unbiased prediction results since the occupancy or the rent_rate alone won't reflect the revenue.
 
@@ -374,6 +385,7 @@ After trying different shrinkage rates, I have succeeded in over-performing the 
 
 
 ## 4th problem, Predictive model building: California housing
+
 
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE, results='hide'}
@@ -397,7 +409,7 @@ CAhousing1_split_test  = testing(CAhousing1_split)
 
 ```
 
-
+We compare 4 different models to check which model is the optimal.
 
 ```{r, echo=FALSE, message=FALSE, warning=FALSE, results='hide'}
 
@@ -460,7 +472,21 @@ mutate (resid =  medianHouseValue - yhat)
   
 
 ```
+**Now we check which model out of the 4 has the lowest root mean squared errors.**
 
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+CA_models_summary = data.frame(
+CA_RFM1_rmse = rmse_CA1,
+CA_RFM2_rmse = rmse_CA2,
+CA_RFM3_rmse = rmse_CA3,
+CA_Boost_rmse = rmse_boost)
+
+CA_models_summary
+
+
+```
 
 
 

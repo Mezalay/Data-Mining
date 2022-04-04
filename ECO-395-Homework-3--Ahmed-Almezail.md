@@ -24,20 +24,21 @@ exogenous shocks.
 
 **2- How were the researchers from UPenn able to isolate this effect?
 Briefly describe their approach and discuss their result in the “Table
-2” below, from the researchers’ paper.** ![alt text for screen
-readers](../data/ex3table2.png) First, the researchers have used “Terror
-Alert” variable to replace the effect of raising the number of cops
-since it is an exogenous variable in the crime model which could solve
-the endogeneity issue. However, they have also assumed that “Terror
-Alert” might not be quite good proxy since the number of tourists might
-decrease when there is a high Terror Alert. In order to consider that,
-they have isolated the effect of metro ridership by including log(midday
-ridership) as a variable in the regression. So, the first column is the
-uncontrolled effect which says that, when Terror Alert elevated (cops in
-street increases), the number of daily crime rate is expected to
-decrease by 7.32. However, when they control for the metro ridership,
-they still expect a decline in the number of crimes by 6.1. As a result,
-raising the number of cops would decrease the number of crimes in DC.
+2” below, from the researchers’ paper.**
+
+First, the researchers have used “Terror Alert” variable to replace the
+effect of raising the number of cops since it is an exogenous variable
+in the crime model which could solve the endogeneity issue. However,
+they have also assumed that “Terror Alert” might not be quite good proxy
+since the number of tourists might decrease when there is a high Terror
+Alert. In order to consider that, they have isolated the effect of metro
+ridership by including log(midday ridership) as a variable in the
+regression. So, the first column is the uncontrolled effect which says
+that, when Terror Alert elevated (cops in street increases), the number
+of daily crime rate is expected to decrease by 7.32. However, when they
+control for the metro ridership, they still expect a decline in the
+number of crimes by 6.1. As a result, raising the number of cops would
+decrease the number of crimes in DC.
 
 **3- Why did they have to control for Metro ridership? What was that
 trying to capture?**
@@ -59,8 +60,6 @@ elevated.
 **4- Below I am showing you “Table 4” from the researchers’ paper. Just
 focus on the first column of the table. Can you describe the model being
 estimated here? What is the conclusion?**
-
-![alt text for screen readers](../data/ex3table4.png)
 
 In this table, the researchers included the district fixed effects in
 the regression by using District as an interaction variable with “High
@@ -88,16 +87,22 @@ First, we use CART model.
 
 ![](ECO-395-Homework-3--Ahmed-Almezail_files/figure-markdown_strict/unnamed-chunk-4-1.png)![](ECO-395-Homework-3--Ahmed-Almezail_files/figure-markdown_strict/unnamed-chunk-4-2.png)
 
-Now we use random forest model.
+**Now we use random forest model.**
 
-![](ECO-395-Homework-3--Ahmed-Almezail_files/figure-markdown_strict/unnamed-chunk-5-1.png)![](ECO-395-Homework-3--Ahmed-Almezail_files/figure-markdown_strict/unnamed-chunk-5-2.png)![](ECO-395-Homework-3--Ahmed-Almezail_files/figure-markdown_strict/unnamed-chunk-5-3.png)![](ECO-395-Homework-3--Ahmed-Almezail_files/figure-markdown_strict/unnamed-chunk-5-4.png)
+![](ECO-395-Homework-3--Ahmed-Almezail_files/figure-markdown_strict/unnamed-chunk-5-1.png)![](ECO-395-Homework-3--Ahmed-Almezail_files/figure-markdown_strict/unnamed-chunk-5-2.png)![](ECO-395-Homework-3--Ahmed-Almezail_files/figure-markdown_strict/unnamed-chunk-5-3.png)
 
-Finally we model by using Boosting alogorthim.
+**Finally we model by using gradient Boosting model with Gaussian and
+Poisson distributions.**
 
 ![](ECO-395-Homework-3--Ahmed-Almezail_files/figure-markdown_strict/unnamed-chunk-6-1.png)![](ECO-395-Homework-3--Ahmed-Almezail_files/figure-markdown_strict/unnamed-chunk-6-2.png)
 
+    ##   CART_RMSE RForest_RMSE Normal_Boost_RMSE Poisson_Boost_RMSE
+    ## 1  37.30277     35.88153           35.2054           35.53762
+
 Based on the out of sample RMSE, the Gaussian Booster model seems to
 have the best prediction power.
+
+**Now we plot the partial dependence of 4 variables.**
 
 ![](ECO-395-Homework-3--Ahmed-Almezail_files/figure-markdown_strict/unnamed-chunk-8-1.png)![](ECO-395-Homework-3--Ahmed-Almezail_files/figure-markdown_strict/unnamed-chunk-8-2.png)![](ECO-395-Homework-3--Ahmed-Almezail_files/figure-markdown_strict/unnamed-chunk-8-3.png)![](ECO-395-Homework-3--Ahmed-Almezail_files/figure-markdown_strict/unnamed-chunk-8-4.png)
 
@@ -109,9 +114,26 @@ and the Fall season with the other seasons.
 
 ## 3rd problem, Predictive model building: green certification
 
-![](ECO-395-Homework-3--Ahmed-Almezail_files/figure-markdown_strict/unnamed-chunk-11-1.png)![](ECO-395-Homework-3--Ahmed-Almezail_files/figure-markdown_strict/unnamed-chunk-11-2.png)![](ECO-395-Homework-3--Ahmed-Almezail_files/figure-markdown_strict/unnamed-chunk-11-3.png)![](ECO-395-Homework-3--Ahmed-Almezail_files/figure-markdown_strict/unnamed-chunk-11-4.png)
+So I used three random forest models, and one gradient boosting model to
+measure the efficiency of the predictions.
 
-The goal of this excersie is predict the revenue per square foot per
+![](ECO-395-Homework-3--Ahmed-Almezail_files/figure-markdown_strict/unnamed-chunk-11-1.png)
+
+    ## Distribution not specified, assuming gaussian ...
+
+    ##   RFM1_rmse RFM2_rmse RFM3_rmse Boost_rmse
+    ## 1  174.5315  157.0977  188.3672   136.0743
+
+**Now we check for the partial dependence of green rating based on the
+boosting model (the optimal model).**
+
+![](ECO-395-Homework-3--Ahmed-Almezail_files/figure-markdown_strict/unnamed-chunk-12-1.png)
+
+    ##   green_rating     yhat
+    ## 1            0 2402.341
+    ## 2            1 2402.341
+
+The goal of this exercise is predict the revenue per square foot per
 calender year of about 8,000 commercial rental properties across the US.
 In addition, some of those properties are green certified which means
 they got green certification from either LEED or Energystar. Another
@@ -163,9 +185,16 @@ the same and the plot gives us the same answer too.
 
 ## 4th problem, Predictive model building: California housing
 
-![](ECO-395-Homework-3--Ahmed-Almezail_files/figure-markdown_strict/unnamed-chunk-15-1.png)
+We compare 4 different models to check which model is the optimal.
 
-![](ECO-395-Homework-3--Ahmed-Almezail_files/figure-markdown_strict/unnamed-chunk-16-1.png)![](ECO-395-Homework-3--Ahmed-Almezail_files/figure-markdown_strict/unnamed-chunk-16-2.png)![](ECO-395-Homework-3--Ahmed-Almezail_files/figure-markdown_strict/unnamed-chunk-16-3.png)
+![](ECO-395-Homework-3--Ahmed-Almezail_files/figure-markdown_strict/unnamed-chunk-15-1.png)
+**Now we check which model out of the 4 has the lowest root mean squared
+errors.**
+
+    ##   CA_RFM1_rmse CA_RFM2_rmse CA_RFM3_rmse CA_Boost_rmse
+    ## 1     48630.96     48572.76     47998.16      51663.24
+
+![](ECO-395-Homework-3--Ahmed-Almezail_files/figure-markdown_strict/unnamed-chunk-17-1.png)![](ECO-395-Homework-3--Ahmed-Almezail_files/figure-markdown_strict/unnamed-chunk-17-2.png)![](ECO-395-Homework-3--Ahmed-Almezail_files/figure-markdown_strict/unnamed-chunk-17-3.png)
 
 For this model, the aim was to predict the median house value in
 California State. In order to do that, I have used machine learning

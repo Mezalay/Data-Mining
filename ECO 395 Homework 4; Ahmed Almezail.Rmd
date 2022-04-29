@@ -1,0 +1,212 @@
+---
+title: "ECO 935 Homework 3: Ahmed Almezail"
+output: md_document
+---
+
+## Problem 1: visualization
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, results='hide'}
+
+library(ggplot2)
+library(LICORS)  # for kmeans++
+library(foreach)
+library(mosaic)
+library(ggbiplot)
+library(devtools)
+library(ggfortify)
+
+
+
+```
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, results='hide'}
+wine = read.csv('../data/wine.csv')
+
+```
+
+First, let's have a look at the summary of the data.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+summary(wine)
+
+```
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, results='hide'}
+
+X = wine[,-(12:13)]
+X = scale(X, center=TRUE, scale=TRUE)
+
+mu = attr(X,"scaled:center")
+sigma = attr(X,"scaled:scale")
+
+```
+
+Now we create 2 clusters using K-means.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, results='hide'}
+set.rseed(1)
+clust1 = kmeans(X, 2, nstart=25)
+
+clust1$center[1,]*sigma + mu
+clust1$center[2,]*sigma + mu
+
+
+
+```
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, results='hide'}
+
+qplot(color, quality, data=wine, color=factor(clust1$cluster)) +
+  theme_minimal()
+
+
+
+```
+As we can notice, the algorithm succeeded in differentiating between the wine colors.
+
+
+Out of curiosity, let's have a look at the distribution of quality for each wine color.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, results='hide'}
+
+
+ggplot(wine) +
+ aes(x = quality) +
+ geom_histogram(bins = 30L, fill = "#112446") +
+ theme_minimal() +
+ facet_wrap(vars(color))
+
+
+```
+
+White wines have higher frequency in quality that is higher than 7. That is relatively reflected in the clustered graph by having a point when quality = 9. However, we don't see that in the red whine. Also, there are no points for both wines when quality is lower than 3 which matches the distribution of the quality variable. So, we can say that the clustering satisfies the differentiating between red and white wines including their qualities. 
+
+We have tried K = different values, but it failed to answer what is asked in the question. Therefore, we believe 2 clusters is an option that satisfies the this part.
+
+
+However, let's see if can improve the in-sample fit by doing K-means++.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, results='hide'}
+set.rseed(1)
+clust2 = kmeanspp(X, k=2, nstart=25)
+
+clust2$center[1,]*sigma + mu
+clust2$center[2,]*sigma + mu
+
+```
+
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, results='hide'}
+
+qplot(color, quality, data=wine, color=factor(clust2$cluster))
+
+
+
+```
+
+We got the same graph, but let's check the cluster sum of errors to double check.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, results='hide'}
+
+#Put them in a table 
+
+
+Kmeans_withinss = clust1$tot.withinss
+Kmeanspp_withinss = clust2$tot.withinss
+Kmeans_betweenss  = clust1$betweenss
+Kmeanspp_betweenss  = clust2$betweenss
+
+kmeans_summary = data.frame(
+Kmeans_withinss = Kmeans_withinss,
+Kmeanspp_withinss = Kmeanspp_withinss,
+Kmeans_betweenss = Kmeans_betweenss,
+Kmeanspp_betweenss = Kmeanspp_betweenss)
+
+kmeans_summary
+
+
+```
+
+There was no improvement when we did the K-means++. So the k-means itself was sufficient.
+
+
+Now let's work on PCA...
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, results='hide'}
+
+wine.pca1 = prcomp(X, rank = 6)
+
+summary(wine.pca1)
+
+str(wine.pca1)
+
+```
+
+From the results, we can notice that PC2 explains 50% of the variations, and PC6 explains 85% as cumulative.
+
+
+Let's first work on PCA1 and PCA2.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, results='hide'}
+
+loadings = wine.pca1$rotation
+scores = wine.pca1$x
+
+wine2 = cbind(wine, wine.pca1$x[,1:6]) 
+
+```
+
+
+
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, results='hide'}
+
+ggplot(wine2, aes(PC1, PC2, col=quality)) + 
+  geom_point(shape = "circle", size = 1.5) +
+ scale_color_viridis_c(option = "magma", direction = 1) +
+ theme_minimal()
+
+ggplot(wine2, aes(PC1, PC2, col=color, fill=color)) + 
+  stat_ellipse(geom= "polygon", col="black", alpha=0.5) +
+  geom_point(shape = 21, col = "black")+
+   theme_minimal()
+
+#larger alcohol and smaller density is correlated with quality
+
+```
+
+
+PCA1 and PCA2 were able to distinguish between red wines and white wines. There are some blue points lay in the red circle, that's because their chemical properties must be very close to each others. However, in general the algorithm succeed in differentiating the colors. In terms of quality, it seems the higher quality wines are the points below 0 for PCA2 and above 0 for PCA1 in general. However, let's understand how PCA1 and 2 are formed.
+
+Note: We have tried the other PCAs, but it seems like PCA1 and PCA2 is better at differentiating the colors and quality.
+
+
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, results='hide'}
+
+
+
+
+
+autoplot(wine.pca1, data = wine, colour = 'color', alpha = .9,
+loadings = TRUE, loading.color = "red",
+loadings.label = TRUE, loadings.label.size = 3)
+
+
+autoplot(wine.pca1, data = wine, colour = 'quality', alpha = .9,
+loadings = TRUE, loading.color = "red",
+loadings.label = TRUE, loadings.label.size = 3)
+
+
+
+```
+From the graph above we can know that quality is negatively correlated with density, fixed acidity, chlorides. On the other hand, it is positively correlated with alcohol. 
+
+
+So we can conclude that the unsupervised algorithm used was relatively able to distinguish between red and white wines, and between their qualities. There are margin of errors, but the results still could be interpreted. 
